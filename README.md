@@ -118,7 +118,7 @@
 1. Clone este repositório:
    ```bash
    git clone https://github.com/GabrielCordeiroBarrosoTeles/simaorefrigeracao.git
-   cd simao-refrigeracao
+   cd simaorefrigeracao
    ```
 
 2. Configure o banco de dados:
