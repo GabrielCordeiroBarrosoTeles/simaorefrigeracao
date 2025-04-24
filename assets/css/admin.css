@@ -1,0 +1,244 @@
+/* Estilos para o painel administrativo */
+:root {
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --primary-light: #3b82f6;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --info: #3b82f6;
+  --dark: #1f2937;
+  --light: #f9fafb;
+  --gray: #6b7280;
+  --white: #ffffff;
+}
+
+/* Estilos gerais */
+body {
+  font-family: "Inter", sans-serif;
+  background-color: #f4f6f9;
+}
+
+.content-wrapper {
+  background-color: #f4f6f9;
+  padding: 20px;
+}
+
+/* Estilos para a página de login */
+.login-page {
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+}
+
+.login-container {
+  width: 400px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  padding: 30px;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.login-header .logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 20px;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--primary);
+}
+
+.login-header .logo i {
+  margin-right: 10px;
+  font-size: 28px;
+}
+
+.login-header h1 {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--dark);
+}
+
+.login-form {
+  margin-bottom: 30px;
+}
+
+.login-footer {
+  text-align: center;
+  font-size: 14px;
+  color: var(--gray);
+}
+
+/* Estilos para o sidebar */
+.main-sidebar {
+  background-color: var(--dark);
+}
+
+.sidebar-dark-primary .nav-sidebar > .nav-item > .nav-link.active {
+  background-color: var(--primary);
+}
+
+.brand-link {
+  text-align: center;
+  padding: 15px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.brand-image {
+  margin-right: 10px;
+}
+
+/* Estilos para formulários */
+.form-group label {
+  font-weight: 500;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-block {
+  display: block;
+  width: 100%;
+}
+
+/* Estilos para alertas */
+.alert {
+  border-radius: 4px;
+  padding: 12px 15px;
+  margin-bottom: 20px;
+}
+
+.alert-success {
+  background-color: #d1fae5;
+  color: #065f46;
+  border-color: #a7f3d0;
+}
+
+.alert-danger {
+  background-color: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.alert-warning {
+  background-color: #fffbeb;
+  color: #92400e;
+  border-color: #fef3c7;
+}
+
+.alert-info {
+  background-color: #dbeafe;
+  color: #1e40af;
+  border-color: #bfdbfe;
+}
+
+/* Estilos para tabelas */
+.table {
+  background-color: #fff;
+}
+
+.table th {
+  font-weight: 600;
+  background-color: #f9fafb;
+}
+
+/* Estilos para cards */
+.card {
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+}
+
+.card-header {
+  background-color: #fff;
+  border-bottom: 1px solid #e5e7eb;
+  padding: 15px 20px;
+}
+
+.card-title {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.card-body {
+  padding: 20px;
+}
+
+.card-footer {
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+  padding: 15px 20px;
+}
+
+/* Estilos para estatísticas */
+.small-box {
+  border-radius: 8px;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.small-box .inner {
+  padding: 20px;
+  color: #fff;
+}
+
+.small-box h3 {
+  font-size: 32px;
+  font-weight: 700;
+  margin: 0 0 10px 0;
+}
+
+.small-box p {
+  font-size: 16px;
+  margin: 0;
+}
+
+.small-box .icon {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  font-size: 60px;
+  color: rgba(255, 255, 255, 0.2);
+}
+
+.small-box.bg-primary {
+  background-color: var(--primary);
+}
+
+.small-box.bg-success {
+  background-color: var(--success);
+}
+
+.small-box.bg-warning {
+  background-color: var(--warning);
+}
+
+.small-box.bg-danger {
+  background-color: var(--danger);
+}
+
+/* Responsividade */
+@media (max-width: 768px) {
+  .login-container {
+    width: 90%;
+  }
+}
