@@ -36,7 +36,7 @@ function sanitize($input) {
 
 // Função para verificar se o usuário está logado
 function is_logged_in() {
-    return isset($_SESSION['user_id']);
+    return isset($_SESSION['user_id']) && !empty($_SESSION['user_id']);
 }
 
 // Função para verificar se é uma requisição POST

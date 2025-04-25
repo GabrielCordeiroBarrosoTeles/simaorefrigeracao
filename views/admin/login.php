@@ -7,6 +7,7 @@
     
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="/assets/css/admin.css">
 </head>
 <body class="login-page">
@@ -33,15 +34,24 @@
                 
                 <div class="form-group">
                     <label for="email">Email</label>
-                    <input type="email" id="email" name="email" placeholder="seu@email.com" required>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="seu@email.com" required>
                 </div>
                 
                 <div class="form-group">
                     <label for="senha">Senha</label>
-                    <input type="password" id="senha" name="senha" placeholder="Sua senha" required>
+                    <input type="password" id="senha" name="senha" class="form-control" placeholder="Sua senha" required>
                 </div>
                 
-                <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                <div class="form-group">
+                    <button type="submit" class="btn btn-primary btn-block">Entrar</button>
+                </div>
+                
+                <div class="text-center mt-3">
+                    <p class="text-muted">
+                        <small>Email: admin@friocerto.com.br</small><br>
+                        <small>Senha: admin123</small>
+                    </p>
+                </div>
             </form>
         </div>
         
@@ -51,6 +61,8 @@
     </div>
     
     <!-- JavaScript -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/assets/js/admin.js"></script>
 </body>
 </html>

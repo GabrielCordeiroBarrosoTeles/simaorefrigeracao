@@ -35,6 +35,12 @@ class AuthController {
         }
         
         try {
+            // Depuração - verificar se a conexão com o banco está funcionando
+            if (!$this->db) {
+                set_flash_message('danger', 'Erro de conexão com o banco de dados.');
+                redirect('/admin/login');
+            }
+            
             $query = "SELECT * FROM usuarios WHERE email = :email LIMIT 1";
             $stmt = $this->db->prepare($query);
             $stmt->bindParam(':email', $email);
@@ -42,7 +48,15 @@ class AuthController {
             
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
             
-            if ($usuario && password_verify($senha, $usuario['senha'])) {
+            // Depuração - verificar se o usuário foi encontrado
+            if (!$usuario) {
+                set_flash_message('danger', 'Email ou senha incorretos.');
+                redirect('/admin/login');
+            }
+            
+            // Verificar a senha
+            // Para a senha 'admin123', o hash é '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi'
+            if (password_verify($senha, $usuario['senha'])) {
                 // Login bem-sucedido
                 $_SESSION['user_id'] = $usuario['id'];
                 $_SESSION['user_nome'] = $usuario['nome'];
@@ -62,7 +76,7 @@ class AuthController {
                 redirect('/admin/login');
             }
         } catch (PDOException $e) {
-            set_flash_message('danger', 'Erro ao processar sua solicitação. Por favor, tente novamente.');
+            set_flash_message('danger', 'Erro ao processar sua solicitação: ' . $e->getMessage());
             
             if (DEBUG_MODE) {
                 $_SESSION['error_details'] = $e->getMessage();

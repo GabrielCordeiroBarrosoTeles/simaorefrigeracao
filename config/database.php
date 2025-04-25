@@ -1,7 +1,7 @@
 <?php
 class Database {
     private $host = 'localhost';
-    private $db_name = 'simaorefrigeracao';
+    private $db_name = 'friocerto';
     private $username = 'root';
     private $password = '';
     private $conn;

@@ -3,7 +3,7 @@ import "@/app/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 
 export const metadata = {
-  title: "Simão Refrigeração - Soluções em Ar Condicionado",
+  title: "FrioCerto - Soluções em Ar Condicionado",
   description:
     "Serviços de instalação, manutenção e projetos de ar condicionado para residências, comércios e indústrias.",
     generator: 'v0.dev'

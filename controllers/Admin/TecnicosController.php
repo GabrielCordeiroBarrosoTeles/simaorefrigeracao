@@ -137,8 +137,6 @@ class TecnicosController {
         if ($id <= 0) {
             set_flash_message('danger', 'ID de técnico inválido.');
             redirect('/admin/tecnicos');
-          'ID de técnico inválido.');
-            redirect('/admin/tecnicos');
         }
         
         // Sanitizar e validar dados
@@ -283,5 +281,130 @@ class TecnicosController {
         $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         require 'views/admin/tecnicos/agendamentos.php';
+    }
+    
+    // API para estatísticas de técnicos
+    public function api() {
+        header('Content-Type: application/json');
+        
+        if (!is_logged_in()) {
+            echo json_encode(['error' => 'Não autorizado']);
+            exit;
+        }
+        
+          {
+            echo json_encode(['error' => 'Não autorizado']);
+            exit;
+        }
+        
+        $action = isset($_GET['action']) ? $_GET['action'] : '';
+        
+        switch ($action) {
+            case 'stats':
+                $this->apiGetTecnicoStats();
+                break;
+            case 'disponibilidade':
+                $this->apiGetTecnicoDisponibilidade();
+                break;
+            default:
+                echo json_encode(['error' => 'Ação inválida']);
+                break;
+        }
+    }
+    
+    private function apiGetTecnicoStats() {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        
+        if ($id <= 0) {
+            echo json_encode(['error' => 'ID de técnico inválido']);
+            exit;
+        }
+        
+        try {
+            // Total de agendamentos
+            $query = "SELECT COUNT(*) as total FROM agendamentos WHERE tecnico_id = :id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+            
+            // Total de agendamentos concluídos
+            $query = "SELECT COUNT(*) as total FROM agendamentos WHERE tecnico_id = :id AND status = 'concluido'";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            $concluidos = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+            
+            // Total de agendamentos pendentes
+            $query = "SELECT COUNT(*) as total FROM agendamentos WHERE tecnico_id = :id AND status = 'pendente'";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            $pendentes = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+            
+            // Total de agendamentos cancelados
+            $query = "SELECT COUNT(*) as total FROM agendamentos WHERE tecnico_id = :id AND status = 'cancelado'";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->execute();
+            $cancelados = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
+            
+            echo json_encode([
+                'success' => true,
+                'total' => $total,
+                'concluidos' => $concluidos,
+                'pendentes' => $pendentes,
+                'cancelados' => $cancelados
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'error' => 'Erro ao buscar estatísticas',
+                'message' => DEBUG_MODE ? $e->getMessage() : null
+            ]);
+        }
+    }
+    
+    private function apiGetTecnicoDisponibilidade() {
+        $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+        $data = isset($_GET['data']) ? $_GET['data'] : date('Y-m-d');
+        
+        if ($id <= 0) {
+            echo json_encode(['error' => 'ID de técnico inválido']);
+            exit;
+        }
+        
+        try {
+            // Buscar agendamentos do técnico na data especificada
+            $query = "SELECT hora_inicio, hora_fim FROM agendamentos 
+                      WHERE tecnico_id = :id AND data_agendamento = :data AND status != 'cancelado'";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            $stmt->bindParam(':data', $data);
+            $stmt->execute();
+            $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Horários ocupados
+            $horarios_ocupados = [];
+            foreach ($agendamentos as $agendamento) {
+                $inicio = strtotime($agendamento['hora_inicio']);
+                $fim = strtotime($agendamento['hora_fim'] ?? date('H:i:s', $inicio + 7200)); // 2 horas padrão se não tiver fim
+                
+                $horarios_ocupados[] = [
+                    'inicio' => date('H:i', $inicio),
+                    'fim' => date('H:i', $fim)
+                ];
+            }
+            
+            echo json_encode([
+                'success' => true,
+                'data' => $data,
+                'horarios_ocupados' => $horarios_ocupados
+            ]);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'error' => 'Erro ao buscar disponibilidade',
+                'message' => DEBUG_MODE ? $e->getMessage() : null
+            ]);
+        }
     }
 }

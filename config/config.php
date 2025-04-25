@@ -13,7 +13,7 @@ define('UPLOAD_DIR', 'uploads/');
 define('MAX_FILE_SIZE', 5 * 1024 * 1024); // 5MB
 
 // Configurações de sessão
-define('SESSION_NAME', 'simaorefrigeracao_session');
+define('SESSION_NAME', 'friocerto_session');
 define('SESSION_LIFETIME', 7200); // 2 horas
 
 // Configurações de timezone

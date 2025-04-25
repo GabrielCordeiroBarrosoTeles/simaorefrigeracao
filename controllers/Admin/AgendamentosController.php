@@ -28,7 +28,7 @@ class AgendamentosController {
     
     public function calendario() {
         // Buscar todos os agendamentos para o calendário
-        $query = "SELECT a.id, a.titulo, a.data_agendamento, a.hora_inicio, a.hora_fim, 
+        $query = "SELECT a.id, a.titulo, a.data_agendamento, a.hora_inicio, a.hora_fim, a.observacoes,
                   a.status, c.nome as cliente_nome, t.nome as tecnico_nome, t.cor as tecnico_cor
                   FROM agendamentos a
                   LEFT JOIN clientes c ON a.cliente_id = c.id
@@ -42,7 +42,7 @@ class AgendamentosController {
         $eventos = [];
         foreach ($agendamentos as $agendamento) {
             $data_inicio = $agendamento['data_agendamento'] . ' ' . $agendamento['hora_inicio'];
-            $data_fim = $agendamento['data_agendamento'] . ' ' . $agendamento['hora_fim'];
+            $data_fim = $agendamento['data_agendamento'] . ' ' . ($agendamento['hora_fim'] ?? '23:59:59');
             
             // Definir cor com base no status
             $cor = '#3b82f6'; // Azul padrão
@@ -72,7 +72,8 @@ class AgendamentosController {
                 'extendedProps' => [
                     'cliente' => $agendamento['cliente_nome'],
                     'tecnico' => $agendamento['tecnico_nome'],
-                    'status' => $agendamento['status']
+                    'status' => $agendamento['status'],
+                    'observacoes' => $agendamento['observacoes']
                 ]
             ];
         }
@@ -356,70 +357,345 @@ class AgendamentosController {
     private function apiGetAgendamentos() {
         $start = isset($_GET['start']) ? $_GET['start'] : date('Y-m-d');
         $end = isset($_GET['end']) ? $_GET['end'] : date('Y-m-d', strtotime('+30 days'));
+        $tecnico_id = isset($_GET['tecnico_id']) ? (int)$_GET['tecnico_id'] : null;
+        $status = isset($_GET['status']) ? explode(',', $_GET['status']) : null;
+        $limit = isset($_GET['limit']) ? (int)$_GET['limit'] : null;
+        $sort = isset($_GET['sort']) ? $_GET['sort'] : 'desc';
         
-        $query = "SELECT a.id, a.titulo, a.data_agendamento, a.hora_inicio, a.hora_fim, 
-                  a.status, c.nome as cliente_nome, t.nome as tecnico_nome, t.cor as tecnico_cor
+        // Construir a consulta base
+        $query = "SELECT a.id, a.titulo, a.data_agendamento, a.hora_inicio, a.hora_fim, a.observacoes,
+                  a.status, c.nome as cliente_nome, t.nome as tecnico_nome, t.cor as tecnico_cor,
+                  t.id as tecnico_id
                   FROM agendamentos a
                   LEFT JOIN clientes c ON a.cliente_id = c.id
                   LEFT JOIN tecnicos t ON a.tecnico_id = t.id
-                  WHERE a.data_agendamento BETWEEN :start AND :end
-                  ORDER BY a.data_agendamento ASC";
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':start', $start);
-        $stmt->bindParam(':end', $end);
-        $stmt->execute();
-        $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                  WHERE 1=1";
         
-        $eventos = [];
-        foreach ($agendamentos as $agendamento) {
-            $data_inicio = $agendamento['data_agendamento'] . ' ' . $agendamento['hora_inicio'];
-            $data_fim = $agendamento['data_agendamento'] . ' ' . $agendamento['hora_fim'];
-            
-            // Definir cor com base no status
-            $cor = '#3b82f6'; // Azul padrão
-            switch ($agendamento['status']) {
-                case 'concluido':
-                    $cor = '#10b981'; // Verde
-                    break;
-                case 'cancelado':
-                    $cor = '#ef4444'; // Vermelho
-                    break;
-                case 'pendente':
-                    $cor = '#f59e0b'; // Laranja
-                    break;
-            }
-            
-            // Usar a cor do técnico se disponível
-            if (!empty($agendamento['tecnico_cor'])) {
-                $cor = $agendamento['tecnico_cor'];
-            }
-            
-            $eventos[] = [
-                'id' => $agendamento['id'],
-                'title' => $agendamento['titulo'],
-                'start' => $data_inicio,
-                'end' => $data_fim,
-                'color' => $cor,
-                'extendedProps' => [
-                    'cliente' => $agendamento['cliente_nome'],
-                    'tecnico' => $agendamento['tecnico_nome'],
-                    'status' => $agendamento['status']
-                ]
-            ];
+        $params = [];
+        
+        // Adicionar filtros
+        if ($start) {
+            $query .= " AND a.data_agendamento >= :start";
+            $params[':start'] = $start;
         }
         
-        echo json_encode($eventos);
+        if ($end) {
+            $query .= " AND a.data_agendamento <= :end";
+            $params[':end'] = $end;
+        }
+        
+        if ($tecnico_id) {
+            $query .= " AND a.tecnico_id = :tecnico_id";
+            $params[':tecnico_id'] = $tecnico_id;
+        }
+        
+        if ($status && is_array($status)) {
+            $placeholders = [];
+            foreach ($status as $i => $s) {
+                $key = ":status{$i}";
+                $placeholders[] = $key;
+                $params[$key] = $s;
+            }
+            if (!empty($placeholders)) {
+                $query .= " AND a.status IN (" . implode(',', $placeholders) . ")";
+            }
+        }
+        
+        // Ordenação
+        $query .= " ORDER BY a.data_agendamento " . ($sort === 'asc' ? 'ASC' : 'DESC');
+        
+        // Limite
+        if ($limit) {
+            $query .= " LIMIT :limit";
+            $params[':limit'] = $limit;
+        }
+        
+        try {
+            $stmt = $this->db->prepare($query);
+            
+            // Bind params
+            foreach ($params as $key => $value) {
+                if ($key === ':limit') {
+                    $stmt->bindValue($key, $value, PDO::PARAM_INT);
+                } else {
+                    $stmt->bindValue($key, $value);
+                }
+            }
+            
+            $stmt->execute();
+            $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $eventos = [];
+            foreach ($agendamentos as $agendamento) {
+                $data_inicio = $agendamento['data_agendamento'] . ' ' . $agendamento['hora_inicio'];
+                $data_fim = $agendamento['data_agendamento'] . ' ' . ($agendamento['hora_fim'] ?? '23:59:59');
+                
+                // Definir cor com base no status
+                $cor = '#3b82f6'; // Azul padrão
+                switch ($agendamento['status']) {
+                    case 'concluido':
+                        $cor = '#10b981'; // Verde
+                        break;
+                    case 'cancelado':
+                        $cor = '#ef4444'; // Vermelho
+                        break;
+                    case 'pendente':
+                        $cor = '#f59e0b'; // Laranja
+                        break;
+                }
+                
+                // Usar a cor do técnico se disponível
+                if (!empty($agendamento['tecnico_cor'])) {
+                    $cor = $agendamento['tecnico_cor'];
+                }
+                
+                $eventos[] = [
+                    'id' => $agendamento['id'],
+                    'title' => $agendamento['titulo'],
+                    'start' => $data_inicio,
+                    'end' => $data_fim,
+                    'color' => $cor,
+                    'extendedProps' => [
+                        'cliente' => $agendamento['cliente_nome'],
+                        'tecnico' => $agendamento['tecnico_nome'],
+                        'tecnico_id' => $agendamento['tecnico_id'],
+                        'status' => $agendamento['status'],
+                        'observacoes' => $agendamento['observacoes']
+                    ]
+                ];
+            }
+            
+            echo json_encode($eventos);
+        } catch (PDOException $e) {
+            echo json_encode([
+                'error' => 'Erro ao buscar agendamentos',
+                'message' => DEBUG_MODE ? $e->getMessage() : null
+            ]);
+        }
     }
     
     private function apiAddAgendamento() {
-        // Implementação para adicionar agendamento via API
+        // Verificar se é uma requisição POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Método não permitido']);
+            exit;
+        }
+        
+        // Obter dados do corpo da requisição
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$data) {
+            echo json_encode(['error' => 'Dados inválidos']);
+            exit;
+        }
+        
+        // Sanitizar e validar dados
+        $titulo = sanitize($data['titulo'] ?? '');
+        $cliente_id = (int)($data['cliente_id'] ?? 0);
+        $servico_id = (int)($data['servico_id'] ?? 0);
+        $tecnico_id = (int)($data['tecnico_id'] ?? 0);
+        $data_agendamento = sanitize($data['data_agendamento'] ?? '');
+        $hora_inicio = sanitize($data['hora_inicio'] ?? '');
+        $hora_fim = sanitize($data['hora_fim'] ?? '');
+        $observacoes = sanitize($data['observacoes'] ?? '');
+        $status = sanitize($data['status'] ?? 'pendente');
+        
+        // Validação básica
+        if (empty($titulo) || empty($data_agendamento) || empty($hora_inicio) || $cliente_id <= 0 || $servico_id <= 0 || $tecnico_id <= 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Por favor, preencha todos os campos obrigatórios.'
+            ]);
+            exit;
+        }
+        
+        try {
+            $query = "INSERT INTO agendamentos (titulo, cliente_id, servico_id, tecnico_id, data_agendamento, 
+                      hora_inicio, hora_fim, observacoes, status, data_criacao) 
+                      VALUES (:titulo, :cliente_id, :servico_id, :tecnico_id, :data_agendamento, 
+                      :hora_inicio, :hora_fim, :observacoes, :status, NOW())";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':titulo', $titulo);
+            $stmt->bindParam(':cliente_id', $cliente_id);
+            $stmt->bindParam(':servico_id', $servico_id);
+            $stmt->bindParam(':tecnico_id', $tecnico_id);
+            $stmt->bindParam(':data_agendamento', $data_agendamento);
+            $stmt->bindParam(':hora_inicio', $hora_inicio);
+            $stmt->bindParam(':hora_fim', $hora_fim);
+            $stmt->bindParam(':observacoes', $observacoes);
+            $stmt->bindParam(':status', $status);
+            
+            if ($stmt->execute()) {
+                $id = $this->db->lastInsertId();
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Agendamento adicionado com sucesso!',
+                    'id' => $id
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Erro ao adicionar agendamento.'
+                ]);
+            }
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erro ao processar sua solicitação.',
+                'error' => DEBUG_MODE ? $e->getMessage() : null
+            ]);
+        }
     }
     
     private function apiUpdateAgendamento() {
-        // Implementação para atualizar agendamento via API
+        // Verificar se é uma requisição POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Método não permitido']);
+            exit;
+        }
+        
+        // Obter dados do corpo da requisição
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$data || !isset($data['id'])) {
+            echo json_encode(['error' => 'Dados inválidos']);
+            exit;
+        }
+        
+        $id = (int)$data['id'];
+        
+        // Se apenas o status está sendo atualizado
+        if (isset($data['status']) && count($data) === 2) {
+            $status = sanitize($data['status']);
+            
+            try {
+                $query = "UPDATE agendamentos SET status = :status, data_atualizacao = NOW() WHERE id = :id";
+                $stmt = $this->db->prepare($query);
+                $stmt->bindParam(':status', $status);
+                $stmt->bindParam(':id', $id);
+                
+                if ($stmt->execute()) {
+                    echo json_encode([
+                        'success' => true,
+                        'message' => 'Status atualizado com sucesso!'
+                    ]);
+                } else {
+                    echo json_encode([
+                        'success' => false,
+                        'message' => 'Erro ao atualizar status.'
+                    ]);
+                }
+            } catch (PDOException $e) {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Erro ao processar sua solicitação.',
+                    'error' => DEBUG_MODE ? $e->getMessage() : null
+                ]);
+            }
+            
+            exit;
+        }
+        
+        // Atualização completa do agendamento
+        $titulo = sanitize($data['titulo'] ?? '');
+        $cliente_id = (int)($data['cliente_id'] ?? 0);
+        $servico_id = (int)($data['servico_id'] ?? 0);
+        $tecnico_id = (int)($data['tecnico_id'] ?? 0);
+        $data_agendamento = sanitize($data['data_agendamento'] ?? '');
+        $hora_inicio = sanitize($data['hora_inicio'] ?? '');
+        $hora_fim = sanitize($data['hora_fim'] ?? '');
+        $observacoes = sanitize($data['observacoes'] ?? '');
+        $status = sanitize($data['status'] ?? 'pendente');
+        
+        // Validação básica
+        if (empty($titulo) || empty($data_agendamento) || empty($hora_inicio) || $cliente_id <= 0 || $servico_id <= 0 || $tecnico_id <= 0) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Por favor, preencha todos os campos obrigatórios.'
+            ]);
+            exit;
+        }
+        
+        try {
+            $query = "UPDATE agendamentos 
+                      SET titulo = :titulo, cliente_id = :cliente_id, servico_id = :servico_id, 
+                      tecnico_id = :tecnico_id, data_agendamento = :data_agendamento, 
+                      hora_inicio = :hora_inicio, hora_fim = :hora_fim, 
+                      observacoes = :observacoes, status = :status, data_atualizacao = NOW() 
+                      WHERE id = :id";
+            
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':titulo', $titulo);
+            $stmt->bindParam(':cliente_id', $cliente_id);
+            $stmt->bindParam(':servico_id', $servico_id);
+            $stmt->bindParam(':tecnico_id', $tecnico_id);
+            $stmt->bindParam(':data_agendamento', $data_agendamento);
+            $stmt->bindParam(':hora_inicio', $hora_inicio);
+            $stmt->bindParam(':hora_fim', $hora_fim);
+            $stmt->bindParam(':observacoes', $observacoes);
+            $stmt->bindParam(':status', $status);
+            $stmt->bindParam(':id', $id);
+            
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Agendamento atualizado com sucesso!'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Erro ao atualizar agendamento.'
+                ]);
+            }
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erro ao processar sua solicitação.',
+                'error' => DEBUG_MODE ? $e->getMessage() : null
+            ]);
+        }
     }
     
     private function apiDeleteAgendamento() {
-        // Implementação para excluir agendamento via API
+        // Verificar se é uma requisição POST
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            echo json_encode(['error' => 'Método não permitido']);
+            exit;
+        }
+        
+        // Obter dados do corpo da requisição
+        $data = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$data || !isset($data['id'])) {
+            echo json_encode(['error' => 'Dados inválidos']);
+            exit;
+        }
+        
+        $id = (int)$data['id'];
+        
+        try {
+            $query = "DELETE FROM agendamentos WHERE id = :id";
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':id', $id);
+            
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Agendamento excluído com sucesso!'
+                ]);
+            } else {
+                echo json_encode([
+                    'success' => false,
+                    'message' => 'Erro ao excluir agendamento.'
+                ]);
+            }
+        } catch (PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Erro ao processar sua solicitação.',
+                'error' => DEBUG_MODE ? $e->getMessage() : null
+            ]);
+        }
     }
 }
