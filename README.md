@@ -4,7 +4,7 @@ Sistema de gerenciamento para empresa de refrigeração e ar condicionado.
 
 ## Estrutura do Projeto
 
-\`\`\`
+```
 simaorefrigeracao/
 ├── assets/             # Arquivos estáticos (CSS, JS, imagens)
 │   ├── css/            # Arquivos CSS
@@ -28,7 +28,7 @@ simaorefrigeracao/
 ├── bootstrap.php       # Inicialização do sistema
 ├── index.php           # Ponto de entrada da aplicação
 └── README.md           # Documentação do projeto
-\`\`\`
+```
 
 ## Requisitos
 
