@@ -13,11 +13,15 @@ if (!isset($_SESSION['user_id'])) {
     exit;
 }
 
-// Verificar se o usuário é um técnico sem permissões administrativas
-if ($_SESSION['user_nivel'] === 'tecnico') {
-    header('Location: tecnico-dashboard.php');
+// Verificar se o usuário é um técnico
+if ($_SESSION['user_nivel'] !== 'tecnico' && $_SESSION['user_nivel'] !== 'tecnico_adm') {
+    header('Location: admin-dashboard.php');
     exit;
 }
+
+// Obter informações do técnico
+$db = db_connect();
+$tecnico = null;
 
 // Função para verificar se uma tabela existe
 function table_exists($db, $table) {
@@ -29,77 +33,68 @@ function table_exists($db, $table) {
     }
 }
 
-// Função para contar registros com segurança
-function count_records($db, $table) {
-    if (!table_exists($db, $table)) {
-        return 0;
-    }
-    
+// Buscar informações do técnico
+if (table_exists($db, 'tecnicos')) {
     try {
-        $query = "SELECT COUNT(*) as total FROM {$table}";
+        $query = "SELECT * FROM tecnicos WHERE usuario_id = :usuario_id LIMIT 1";
         $stmt = $db->prepare($query);
+        $stmt->bindParam(':usuario_id', $_SESSION['user_id']);
         $stmt->execute();
-        return $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        $tecnico = $stmt->fetch(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        return 0;
+        // Ignorar erro
     }
 }
 
-// Obter estatísticas para o dashboard
-$db = db_connect();
+// Se não encontrar o técnico, criar um registro básico
+if (!$tecnico && table_exists($db, 'tecnicos')) {
+    try {
+        $query = "INSERT INTO tecnicos (nome, email, usuario_id, disponivel) 
+                  VALUES (:nome, :email, :usuario_id, TRUE)";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':nome', $_SESSION['user_nome']);
+        $stmt->bindParam(':email', $_SESSION['user_email']);
+        $stmt->bindParam(':usuario_id', $_SESSION['user_id']);
+        $stmt->execute();
+        
+        // Buscar o técnico recém-criado
+        $query = "SELECT * FROM tecnicos WHERE usuario_id = :usuario_id LIMIT 1";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':usuario_id', $_SESSION['user_id']);
+        $stmt->execute();
+        $tecnico = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (Exception $e) {
+        // Ignorar erro
+    }
+}
 
-// Inicializar variáveis
-$total_servicos = 0;
-$total_clientes = 0;
-$total_tecnicos = 0;
-$total_agendamentos = 0;
-$agendamentos_recentes = [];
-$contatos_recentes = [];
-
-// Total de serviços
-$total_servicos = count_records($db, 'servicos');
-
-// Total de clientes
-$total_clientes = count_records($db, 'clientes');
-
-// Total de técnicos
-$total_tecnicos = count_records($db, 'tecnicos');
-
-// Total de agendamentos
-$total_agendamentos = count_records($db, 'agendamentos');
-
-// Agendamentos recentes
-if (table_exists($db, 'agendamentos')) {
+// Obter agendamentos do técnico
+$agendamentos = [];
+if ($tecnico && table_exists($db, 'agendamentos')) {
     try {
         $query = "SELECT a.*, 
                  IFNULL((SELECT nome FROM clientes WHERE id = a.cliente_id), 'Cliente não encontrado') as cliente_nome,
-                 IFNULL((SELECT nome FROM tecnicos WHERE id = a.tecnico_id), 'Técnico não encontrado') as tecnico_nome,
-                 IFNULL((SELECT titulo FROM servicos WHERE id = a.servico_id), 'Serviço não encontrado') as servico_nome
+                 IFNULL((SELECT nome FROM servicos WHERE id = a.servico_id), 'Serviço não encontrado') as servico_nome
                  FROM agendamentos a 
+                 WHERE a.tecnico_id = :tecnico_id
                  ORDER BY a.data_agendamento DESC 
-                 LIMIT 5";
+                 LIMIT 10";
         $stmt = $db->prepare($query);
+        $stmt->bindParam(':tecnico_id', $tecnico['id']);
         $stmt->execute();
-        $agendamentos_recentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
     } catch (Exception $e) {
-        $agendamentos_recentes = [];
+        // Ignorar erro
     }
 }
 
-// Contatos recentes
-if (table_exists($db, 'contatos')) {
-    try {
-        $query = "SELECT * FROM contatos ORDER BY data_envio DESC LIMIT 5";
-        $stmt = $db->prepare($query);
-        $stmt->execute();
-        $contatos_recentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    } catch (Exception $e) {
-        $contatos_recentes = [];
+// Função para truncar texto
+function truncate($text, $length) {
+    if (strlen($text) <= $length) {
+        return $text;
     }
+    return substr($text, 0, $length) . '...';
 }
-
-// Definir a rota atual para o menu
-$request_uri = $_SERVER['REQUEST_URI'];
 ?>
 
 <!DOCTYPE html>
@@ -107,7 +102,7 @@ $request_uri = $_SERVER['REQUEST_URI'];
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard | <?= SITE_NAME ?></title>
+    <title>Dashboard do Técnico | <?= defined('SITE_NAME') ? SITE_NAME : 'Simão Refrigeração' ?></title>
     
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -561,93 +556,6 @@ $request_uri = $_SERVER['REQUEST_URI'];
             color: var(--danger);
         }
         
-        /* Activity Feed */
-        .activity-feed {
-            background-color: var(--white);
-            border-radius: 0.5rem;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-            margin-bottom: 2rem;
-        }
-        
-        .activity-feed-header {
-            padding: 1.25rem 1.5rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .activity-feed-title {
-            font-size: 1.125rem;
-            font-weight: 600;
-            color: var(--dark);
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-        
-        .activity-feed-title i {
-            color: var(--primary);
-        }
-        
-        .activity-feed-body {
-            padding: 1.25rem 1.5rem;
-        }
-        
-        .activity-item {
-            display: flex;
-            align-items: flex-start;
-            gap: 1rem;
-            padding-bottom: 1.25rem;
-            margin-bottom: 1.25rem;
-            border-bottom: 1px solid #e5e7eb;
-        }
-        
-        .activity-item:last-child {
-            padding-bottom: 0;
-            margin-bottom: 0;
-            border-bottom: none;
-        }
-        
-        .activity-icon {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1rem;
-            flex-shrink: 0;
-        }
-        
-        .activity-icon.login {
-            background-color: rgba(37, 99, 235, 0.1);
-            color: var(--primary);
-        }
-        
-        .activity-icon.contato {
-            background-color: rgba(16, 185, 129, 0.1);
-            color: var(--success);
-        }
-        
-        .activity-icon.agendamento {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--warning);
-        }
-        
-        .activity-content {
-            flex: 1;
-        }
-        
-        .activity-title {
-            font-weight: 500;
-            color: var(--dark);
-            margin-bottom: 0.25rem;
-        }
-        
-        .activity-time {
-            font-size: 0.75rem;
-            color: var(--gray);
-        }
-        
         /* Mobile Styles */
         .mobile-menu-toggle {
             display: none;
@@ -746,7 +654,7 @@ $request_uri = $_SERVER['REQUEST_URI'];
            <button class="mobile-menu-toggle mr-3" id="sidebarToggle">
                <i class="fas fa-bars"></i>
            </button>
-           <a href="admin-dashboard.php" class="header-brand">
+           <a href="tecnico-dashboard.php" class="header-brand">
                <i class="fas fa-snowflake"></i>
                <span class="header-brand-text">Simão Refrigeração</span>
            </a>
@@ -771,13 +679,9 @@ $request_uri = $_SERVER['REQUEST_URI'];
                </div>
                
                <div class="user-dropdown-menu" id="userDropdownMenu">
-                   <a href="admin-profile.php">
+                   <a href="tecnico-profile.php">
                        <i class="fas fa-user"></i>
                        Meu Perfil
-                   </a>
-                   <a href="admin-settings.php">
-                       <i class="fas fa-cog"></i>
-                       Configurações
                    </a>
                    <div class="dropdown-divider"></div>
                    <a href="admin-login.php?logout=1">
@@ -792,43 +696,31 @@ $request_uri = $_SERVER['REQUEST_URI'];
    <!-- Sidebar -->
    <aside class="admin-sidebar" id="sidebar">
        <div class="sidebar-menu">
-           <a href="admin-dashboard.php" class="sidebar-menu-item active">
+           <a href="tecnico-dashboard.php" class="sidebar-menu-item active">
                <i class="fas fa-tachometer-alt"></i>
                Dashboard
            </a>
-           <a href="admin-table.php?table=servicos" class="sidebar-menu-item">
-               <i class="fas fa-fan"></i>
-               Serviços
-           </a>
-           <a href="admin-table.php?table=clientes" class="sidebar-menu-item">
-               <i class="fas fa-users"></i>
-               Clientes
-           </a>
-           <a href="admin-table.php?table=tecnicos" class="sidebar-menu-item">
-               <i class="fas fa-user-hard-hat"></i>
-               Técnicos
-           </a>
-           <a href="admin-table.php?table=agendamentos" class="sidebar-menu-item">
+           <a href="tecnico-agendamentos.php" class="sidebar-menu-item">
                <i class="fas fa-calendar-check"></i>
-               Agendamentos
+               Meus Agendamentos
            </a>
-           <a href="admin-table.php?table=depoimentos" class="sidebar-menu-item">
-               <i class="fas fa-comments"></i>
-               Depoimentos
-           </a>
-           <a href="admin-table.php?table=contatos" class="sidebar-menu-item">
-               <i class="fas fa-envelope"></i>
-               Contatos
+           <a href="tecnico-calendario.php" class="sidebar-menu-item">
+               <i class="fas fa-calendar-alt"></i>
+               Calendário
            </a>
            
-           <div class="sidebar-menu-header">Configurações</div>
-           <a href="admin-table.php?table=usuarios" class="sidebar-menu-item">
-               <i class="fas fa-user-shield"></i>
-               Usuários
-           </a>
-           <a href="admin-settings.php" class="sidebar-menu-item">
+           <?php if ($_SESSION['user_nivel'] === 'tecnico_adm'): ?>
+           <div class="sidebar-menu-header">Administração</div>
+           <a href="admin-dashboard.php" class="sidebar-menu-item">
                <i class="fas fa-cogs"></i>
-               Configurações
+               Painel Admin
+           </a>
+           <?php endif; ?>
+           
+           <div class="sidebar-menu-header">Conta</div>
+           <a href="tecnico-profile.php" class="sidebar-menu-item">
+               <i class="fas fa-user"></i>
+               Meu Perfil
            </a>
            <a href="admin-login.php?logout=1" class="sidebar-menu-item">
                <i class="fas fa-sign-out-alt"></i>
@@ -840,7 +732,7 @@ $request_uri = $_SERVER['REQUEST_URI'];
    <!-- Main Content -->
    <main class="admin-content">
        <div class="page-header">
-           <h1 class="page-title">Dashboard</h1>
+           <h1 class="page-title">Dashboard do Técnico</h1>
            
            <nav aria-label="breadcrumb">
                <ol class="breadcrumb">
@@ -849,70 +741,95 @@ $request_uri = $_SERVER['REQUEST_URI'];
            </nav>
        </div>
        
+       <!-- Perfil do Técnico -->
+       <div class="row mb-4">
+           <div class="col-md-12">
+               <div class="stats-card">
+                   <div class="d-flex align-items-center">
+                       <div class="mr-4">
+                           <i class="fas fa-user-circle fa-4x text-primary"></i>
+                       </div>
+                       <div>
+                           <h2 class="mb-1"><?= htmlspecialchars($_SESSION['user_nome']) ?></h2>
+                           <p class="text-muted mb-2"><?= htmlspecialchars($_SESSION['user_email']) ?></p>
+                           <p class="mb-0">
+                               <span class="badge <?= $tecnico && $tecnico['disponivel'] ? 'badge-success' : 'badge-warning' ?>">
+                                   <?= $tecnico && $tecnico['disponivel'] ? 'Disponível' : 'Indisponível' ?>
+                               </span>
+                           </p>
+                       </div>
+                   </div>
+               </div>
+           </div>
+       </div>
+       
        <!-- Stats Cards -->
        <div class="row">
-           <div class="col-md-6 col-lg-3 mb-4">
+           <div class="col-md-6 col-lg-4 mb-4">
                <div class="stats-card">
                    <div class="stats-card-header">
                        <div class="stats-card-icon primary">
-                           <i class="fas fa-users"></i>
-                       </div>
-                   </div>
-                   <div class="stats-card-value"><?= $total_clientes ?></div>
-                   <div class="stats-card-label">Clientes</div>
-                   <div class="stats-card-footer">
-                       <a href="admin-table.php?table=clientes" class="stats-card-link">
-                           Ver todos <i class="fas fa-arrow-right"></i>
-                       </a>
-                   </div>
-               </div>
-           </div>
-           
-           <div class="col-md-6 col-lg-3 mb-4">
-               <div class="stats-card">
-                   <div class="stats-card-header">
-                       <div class="stats-card-icon success">
                            <i class="fas fa-calendar-check"></i>
                        </div>
                    </div>
-                   <div class="stats-card-value"><?= $total_agendamentos ?></div>
+                   <div class="stats-card-value"><?= count($agendamentos) ?></div>
                    <div class="stats-card-label">Agendamentos</div>
                    <div class="stats-card-footer">
-                       <a href="admin-table.php?table=agendamentos" class="stats-card-link">
+                       <a href="tecnico-agendamentos.php" class="stats-card-link">
                            Ver todos <i class="fas fa-arrow-right"></i>
                        </a>
                    </div>
                </div>
            </div>
            
-           <div class="col-md-6 col-lg-3 mb-4">
+           <div class="col-md-6 col-lg-4 mb-4">
+               <div class="stats-card">
+                   <div class="stats-card-header">
+                       <div class="stats-card-icon success">
+                           <i class="fas fa-check-circle"></i>
+                       </div>
+                   </div>
+                   <div class="stats-card-value">
+                       <?php
+                       $concluidos = 0;
+                       foreach ($agendamentos as $agendamento) {
+                           if (isset($agendamento['status']) && $agendamento['status'] === 'concluido') {
+                               $concluidos++;
+                           }
+                       }
+                       echo $concluidos;
+                       ?>
+                   </div>
+                   <div class="stats-card-label">Concluídos</div>
+                   <div class="stats-card-footer">
+                       <a href="tecnico-agendamentos.php?status=concluido" class="stats-card-link">
+                           Ver todos <i class="fas fa-arrow-right"></i>
+                       </a>
+                   </div>
+               </div>
+           </div>
+           
+           <div class="col-md-6 col-lg-4 mb-4">
                <div class="stats-card">
                    <div class="stats-card-header">
                        <div class="stats-card-icon warning">
-                           <i class="fas fa-user-hard-hat"></i>
+                           <i class="fas fa-clock"></i>
                        </div>
                    </div>
-                   <div class="stats-card-value"><?= $total_tecnicos ?></div>
-                   <div class="stats-card-label">Técnicos</div>
-                   <div class="stats-card-footer">
-                       <a href="admin-table.php?table=tecnicos" class="stats-card-link">
-                           Ver todos <i class="fas fa-arrow-right"></i>
-                       </a>
+                   <div class="stats-card-value">
+                       <?php
+                       $pendentes = 0;
+                       foreach ($agendamentos as $agendamento) {
+                           if (isset($agendamento['status']) && $agendamento['status'] === 'pendente') {
+                               $pendentes++;
+                           }
+                       }
+                       echo $pendentes;
+                       ?>
                    </div>
-               </div>
-           </div>
-           
-           <div class="col-md-6 col-lg-3 mb-4">
-               <div class="stats-card">
-                   <div class="stats-card-header">
-                       <div class="stats-card-icon info">
-                           <i class="fas fa-fan"></i>
-                       </div>
-                   </div>
-                   <div class="stats-card-value"><?= $total_servicos ?></div>
-                   <div class="stats-card-label">Serviços</div>
+                   <div class="stats-card-label">Pendentes</div>
                    <div class="stats-card-footer">
-                       <a href="admin-table.php?table=servicos" class="stats-card-link">
+                       <a href="tecnico-agendamentos.php?status=pendente" class="stats-card-link">
                            Ver todos <i class="fas fa-arrow-right"></i>
                        </a>
                    </div>
@@ -921,13 +838,13 @@ $request_uri = $_SERVER['REQUEST_URI'];
        </div>
        
        <div class="row">
-           <!-- Tables List -->
-           <div class="col-lg-8 mb-4">
+           <!-- Agendamentos -->
+           <div class="col-lg-12 mb-4">
                <div class="data-table-card">
                    <div class="data-table-header">
                        <h2 class="data-table-title">
                            <i class="fas fa-calendar-alt"></i>
-                           Agendamentos Recentes
+                           Meus Agendamentos
                        </h2>
                    </div>
                    <div class="data-table-body">
@@ -936,7 +853,6 @@ $request_uri = $_SERVER['REQUEST_URI'];
                                <thead>
                                    <tr>
                                        <th>Cliente</th>
-                                       <th>Técnico</th>
                                        <th>Serviço</th>
                                        <th>Data</th>
                                        <th>Status</th>
@@ -944,17 +860,16 @@ $request_uri = $_SERVER['REQUEST_URI'];
                                    </tr>
                                </thead>
                                <tbody>
-                                   <?php if (empty($agendamentos_recentes)): ?>
+                                   <?php if (empty($agendamentos)): ?>
                                    <tr>
-                                       <td colspan="6" class="text-center">Nenhum agendamento encontrado.</td>
+                                       <td colspan="5" class="text-center">Nenhum agendamento encontrado.</td>
                                    </tr>
                                    <?php else: ?>
-                                       <?php foreach ($agendamentos_recentes as $agendamento): ?>
+                                       <?php foreach ($agendamentos as $agendamento): ?>
                                        <tr>
                                            <td><?= htmlspecialchars($agendamento['cliente_nome']) ?></td>
-                                           <td><?= htmlspecialchars($agendamento['tecnico_nome']) ?></td>
                                            <td><?= htmlspecialchars($agendamento['servico_nome']) ?></td>
-                                           <td><?= isset($agendamento['data_agendamento']) ? date('d/m/Y', strtotime($agendamento['data_agendamento'])) : 'N/A' ?></td>
+                                           <td><?= isset($agendamento['data_agendamento']) ? date('d/m/Y H:i', strtotime($agendamento['data_agendamento'])) : 'N/A' ?></td>
                                            <td>
                                                <?php
                                                $status_class = 'badge badge-info';
@@ -980,7 +895,7 @@ $request_uri = $_SERVER['REQUEST_URI'];
                                                <span class="<?= $status_class ?>"><?= $status_text ?></span>
                                            </td>
                                            <td class="text-center">
-                                               <a href="admin-view.php?table=agendamentos&id=<?= $agendamento['id'] ?>" class="btn btn-sm btn-info">
+                                               <a href="tecnico-agendamento.php?id=<?= $agendamento['id'] ?>" class="btn btn-sm btn-info">
                                                    <i class="fas fa-eye"></i>
                                                </a>
                                            </td>
@@ -992,44 +907,7 @@ $request_uri = $_SERVER['REQUEST_URI'];
                        </div>
                    </div>
                    <div class="data-table-footer">
-                       <a href="admin-table.php?table=agendamentos" class="btn btn-sm btn-primary">Ver Todos os Agendamentos</a>
-                   </div>
-               </div>
-           </div>
-           
-           <!-- Activity Feed -->
-           <div class="col-lg-4 mb-4">
-               <div class="activity-feed">
-                   <div class="activity-feed-header">
-                       <h2 class="activity-feed-title">
-                           <i class="fas fa-envelope"></i>
-                           Contatos Recentes
-                       </h2>
-                   </div>
-                   <div class="activity-feed-body">
-                       <?php if (empty($contatos_recentes)): ?>
-                           <p class="text-center text-muted">Nenhum contato recente.</p>
-                       <?php else: ?>
-                           <?php foreach ($contatos_recentes as $contato): ?>
-                               <div class="activity-item">
-                                   <div class="activity-icon contato">
-                                       <i class="fas fa-envelope"></i>
-                                   </div>
-                                   <div class="activity-content">
-                                       <div class="activity-title"><?= htmlspecialchars($contato['nome'] ?? 'Nome não disponível') ?></div>
-                                       <div class="activity-description">
-                                           <?= htmlspecialchars(truncate($contato['mensagem'] ?? 'Mensagem não disponível', 50)) ?>
-                                       </div>
-                                       <div class="activity-time">
-                                           <?= isset($contato['data_envio']) ? date('d/m/Y H:i', strtotime($contato['data_envio'])) : 'Data não disponível' ?>
-                                       </div>
-                                   </div>
-                               </div>
-                           <?php endforeach; ?>
-                       <?php endif; ?>
-                   </div>
-                   <div class="activity-feed-footer text-center p-3">
-                       <a href="admin-table.php?table=contatos" class="btn btn-sm btn-primary">Ver Todos os Contatos</a>
+                       <a href="tecnico-agendamentos.php" class="btn btn-sm btn-primary">Ver Todos os Agendamentos</a>
                    </div>
                </div>
            </div>

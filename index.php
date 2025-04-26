@@ -1,260 +1,116 @@
 <?php
-// Iniciar sessão
-session_start();
+// Carregar o bootstrap do sistema
+require_once 'bootstrap.php';
 
-// Configuração do sistema
-require_once 'config/config.php';
-require_once 'config/database.php';
-require_once 'helpers/functions.php';
+// Obter a URL solicitada
+$request_uri = $_SERVER['REQUEST_URI'];
+$base_path = '/simaorefrigeracao'; // Ajuste conforme necessário
 
-// Sistema de roteamento simples
-$request = $_SERVER['REQUEST_URI'];
-$base_path = str_replace('/index.php', '', $_SERVER['SCRIPT_NAME']);
-$route = str_replace($base_path, '', $request);
+// Remover o caminho base e parâmetros de consulta
+$request_uri = str_replace($base_path, '', $request_uri);
+$request_uri = strtok($request_uri, '?');
 
-// Remover parâmetros de consulta
-$route = explode('?', $route)[0];
+// Rotas
+$routes = [
+    // Rotas públicas
+    '/' => ['HomeController', 'index'],
+    '/contato' => ['ContatoController', 'index'],
+    '/processar-contato' => ['ContatoController', 'processar'],
+    
+    // Rotas de autenticação
+    '/admin/login' => ['AuthController', 'loginForm'],
+    '/admin/autenticar' => ['AuthController', 'autenticar'],
+    '/admin/logout' => ['AuthController', 'logout'],
+    
+    // Rotas administrativas
+    '/admin' => ['Admin\DashboardController', 'index'],
+    '/admin/dashboard' => ['Admin\DashboardController', 'index'],
+    
+    // Rotas de serviços
+    '/admin/servicos' => ['Admin\ServicosController', 'index'],
+    '/admin/servicos/novo' => ['Admin\ServicosController', 'create'],
+    '/admin/servicos/salvar' => ['Admin\ServicosController', 'store'],
+    '/admin/servicos/editar' => ['Admin\ServicosController', 'edit'],
+    '/admin/servicos/atualizar' => ['Admin\ServicosController', 'update'],
+    '/admin/servicos/excluir' => ['Admin\ServicosController', 'delete'],
+    
+    // Rotas de clientes
+    '/admin/clientes' => ['Admin\ClientesController', 'index'],
+    '/admin/clientes/novo' => ['Admin\ClientesController', 'create'],
+    '/admin/clientes/salvar' => ['Admin\ClientesController', 'store'],
+    '/admin/clientes/editar' => ['Admin\ClientesController', 'edit'],
+    '/admin/clientes/atualizar' => ['Admin\ClientesController', 'update'],
+    '/admin/clientes/excluir' => ['Admin\ClientesController', 'delete'],
+    '/admin/clientes/agendamentos' => ['Admin\ClientesController', 'agendamentos'],
+    
+    // Rotas de técnicos
+    '/admin/tecnicos' => ['Admin\TecnicosController', 'index'],
+    '/admin/tecnicos/novo' => ['Admin\TecnicosController', 'create'],
+    '/admin/tecnicos/salvar' => ['Admin\TecnicosController', 'store'],
+    '/admin/tecnicos/editar' => ['Admin\TecnicosController', 'edit'],
+    '/admin/tecnicos/atualizar' => ['Admin\TecnicosController', 'update'],
+    '/admin/tecnicos/excluir' => ['Admin\TecnicosController', 'delete'],
+    '/admin/tecnicos/agendamentos' => ['Admin\TecnicosController', 'agendamentos'],
+    '/admin/tecnicos/api' => ['Admin\TecnicosController', 'api'],
+    
+    // Rotas de agendamentos
+    '/admin/agendamentos' => ['Admin\AgendamentosController', 'index'],
+    '/admin/agendamentos/calendario' => ['Admin\AgendamentosController', 'calendario'],
+    '/admin/agendamentos/novo' => ['Admin\AgendamentosController', 'create'],
+    '/admin/agendamentos/salvar' => ['Admin\AgendamentosController', 'store'],
+    '/admin/agendamentos/editar' => ['Admin\AgendamentosController', 'edit'],
+    '/admin/agendamentos/atualizar' => ['Admin\AgendamentosController', 'update'],
+    '/admin/agendamentos/excluir' => ['Admin\AgendamentosController', 'delete'],
+    '/admin/agendamentos/api' => ['Admin\AgendamentosController', 'api'],
+    
+    // Rotas para técnicos logados
+    '/tecnico' => ['TecnicoController', 'index'],
+    '/tecnico/calendario' => ['TecnicoController', 'calendario'],
+    '/tecnico/agendamento' => ['TecnicoController', 'agendamento'],
+    '/tecnico/atualizar-status' => ['TecnicoController', 'atualizarStatus'],
+    '/tecnico/api' => ['TecnicoController', 'api'],
+    
+    // Rota de erro
+    '/erro' => ['ErrorController', 'index'],
+];
 
-// Roteamento
-switch ($route) {
-    case '/':
-    case '':
-        require 'controllers/HomeController.php';
-        $controller = new HomeController();
-        $controller->index();
-        break;
+// Verificar se a rota existe
+if (isset($routes[$request_uri])) {
+    $controller_name = $routes[$request_uri][0];
+    $action_name = $routes[$request_uri][1];
+    
+    // Carregar o controlador
+    if (strpos($controller_name, 'Admin\\') === 0) {
+        $controller_file = CONTROLLERS_DIR . '/' . str_replace('\\', '/', $controller_name) . '.php';
+        $controller_name = str_replace('Admin\\', '', $controller_name);
+    } else {
+        $controller_file = CONTROLLERS_DIR . '/' . $controller_name . '.php';
+    }
+    
+    if (file_exists($controller_file)) {
+        require_once $controller_file;
         
-    case '/servicos':
-        require 'controllers/ServicosController.php';
-        $controller = new ServicosController();
-        $controller->index();
-        break;
+        // Instanciar o controlador e chamar a ação
+        $controller = new $controller_name();
         
-    case '/sobre':
-        require 'controllers/SobreController.php';
-        $controller = new SobreController();
-        $controller->index();
-        break;
-        
-    case '/contato':
-        require 'controllers/ContatoController.php';
-        $controller = new ContatoController();
-        $controller->index();
-        break;
-        
-    case '/enviar-contato':
-        require 'controllers/ContatoController.php';
-        $controller = new ContatoController();
-        $controller->enviar();
-        break;
-        
-    // Rotas do painel administrativo
-    case '/admin':
-    case '/admin/':
-        require 'controllers/Admin/DashboardController.php';
-        $controller = new DashboardController();
-        $controller->index();
-        break;
-        
-    case '/admin/login':
-        require 'controllers/Admin/AuthController.php';
-        $controller = new AuthController();
-        $controller->loginForm();
-        break;
-        
-    case '/admin/autenticar':
-        require 'controllers/Admin/AuthController.php';
-        $controller = new AuthController();
-        $controller->autenticar();
-        break;
-        
-    case '/admin/logout':
-        require 'controllers/Admin/AuthController.php';
-        $controller = new AuthController();
-        $controller->logout();
-        break;
-        
-    // Rotas de Serviços
-    case '/admin/servicos':
-        require 'controllers/Admin/ServicosController.php';
-        $controller = new ServicosController();
-        $controller->index();
-        break;
-        
-    case '/admin/servicos/novo':
-        require 'controllers/Admin/ServicosController.php';
-        $controller = new ServicosController();
-        $controller->create();
-        break;
-        
-    case '/admin/servicos/salvar':
-        require 'controllers/Admin/ServicosController.php';
-        $controller = new ServicosController();
-        $controller->store();
-        break;
-        
-    case '/admin/servicos/editar':
-        require 'controllers/Admin/ServicosController.php';
-        $controller = new ServicosController();
-        $controller->edit();
-        break;
-        
-    case '/admin/servicos/atualizar':
-        require 'controllers/Admin/ServicosController.php';
-        $controller = new ServicosController();
-        $controller->update();
-        break;
-        
-    case '/admin/servicos/excluir':
-        require 'controllers/Admin/ServicosController.php';
-        $controller = new ServicosController();
-        $controller->delete();
-        break;
-        
-    // Rotas de Clientes
-    case '/admin/clientes':
-        require 'controllers/Admin/ClientesController.php';
-        $controller = new ClientesController();
-        $controller->index();
-        break;
-        
-    case '/admin/clientes/novo':
-        require 'controllers/Admin/ClientesController.php';
-        $controller = new ClientesController();
-        $controller->create();
-        break;
-        
-    case '/admin/clientes/salvar':
-        require 'controllers/Admin/ClientesController.php';
-        $controller = new ClientesController();
-        $controller->store();
-        break;
-        
-    case '/admin/clientes/editar':
-        require 'controllers/Admin/ClientesController.php';
-        $controller = new ClientesController();
-        $controller->edit();
-        break;
-        
-    case '/admin/clientes/atualizar':
-        require 'controllers/Admin/ClientesController.php';
-        $controller = new ClientesController();
-        $controller->update();
-        break;
-        
-    case '/admin/clientes/excluir':
-        require 'controllers/Admin/ClientesController.php';
-        $controller = new ClientesController();
-        $controller->delete();
-        break;
-        
-    case '/admin/clientes/agendamentos':
-        require 'controllers/Admin/ClientesController.php';
-        $controller = new ClientesController();
-        $controller->agendamentos();
-        break;
-        
-    // Rotas de Técnicos
-    case '/admin/tecnicos':
-        require 'controllers/Admin/TecnicosController.php';
-        $controller = new TecnicosController();
-        $controller->index();
-        break;
-        
-    case '/admin/tecnicos/novo':
-        require 'controllers/Admin/TecnicosController.php';
-        $controller = new TecnicosController();
-        $controller->create();
-        break;
-        
-    case '/admin/tecnicos/salvar':
-        require 'controllers/Admin/TecnicosController.php';
-        $controller = new TecnicosController();
-        $controller->store();
-        break;
-        
-    case '/admin/tecnicos/editar':
-        require 'controllers/Admin/TecnicosController.php';
-        $controller = new TecnicosController();
-        $controller->edit();
-        break;
-        
-    case '/admin/tecnicos/atualizar':
-        require 'controllers/Admin/TecnicosController.php';
-        $controller = new TecnicosController();
-        $controller->update();
-        break;
-        
-    case '/admin/tecnicos/excluir':
-        require 'controllers/Admin/TecnicosController.php';
-        $controller = new TecnicosController();
-        $controller->delete();
-        break;
-        
-    case '/admin/tecnicos/agendamentos':
-        require 'controllers/Admin/TecnicosController.php';
-        $controller = new TecnicosController();
-        $controller->agendamentos();
-        break;
-        
-    // Rotas de Agendamentos
-    case '/admin/agendamentos':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->index();
-        break;
-        
-    case '/admin/agendamentos/calendario':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->calendario();
-        break;
-        
-    case '/admin/agendamentos/novo':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->create();
-        break;
-        
-    case '/admin/agendamentos/salvar':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->store();
-        break;
-        
-    case '/admin/agendamentos/editar':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->edit();
-        break;
-        
-    case '/admin/agendamentos/atualizar':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->update();
-        break;
-        
-    case '/admin/agendamentos/excluir':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->delete();
-        break;
-        
-    case '/admin/agendamentos/api':
-        require 'controllers/Admin/AgendamentosController.php';
-        $controller = new AgendamentosController();
-        $controller->api();
-        break;
-        
-    // Rotas de Contatos
-    case '/admin/contatos':
-        require 'controllers/Admin/ContatosController.php';
-        $controller = new ContatosController();
-        $controller->index();
-        break;
-        
-    default:
+        // Verificar se o método existe
+        if (method_exists($controller, $action_name)) {
+            $controller->$action_name();
+        } else {
+            // Método não encontrado
+            error_log("Método $action_name não encontrado no controlador $controller_name");
+            http_response_code(404);
+            require VIEWS_DIR . '/404.php';
+        }
+    } else {
+        // Controlador não encontrado
+        error_log("Controlador $controller_file não encontrado");
         http_response_code(404);
-        require 'views/404.php';
-        break;
+        require VIEWS_DIR . '/404.php';
+    }
+} else {
+    // Rota não encontrada
+    error_log("Rota $request_uri não encontrada");
+    http_response_code(404);
+    require VIEWS_DIR . '/404.php';
 }

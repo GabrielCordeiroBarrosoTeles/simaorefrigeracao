@@ -12,18 +12,43 @@ class AgendamentosController {
     }
     
     public function index() {
-        // Buscar todos os agendamentos
-        $query = "SELECT a.*, c.nome as cliente_nome, s.titulo as servico_nome, t.nome as tecnico_nome
-                  FROM agendamentos a
-                  LEFT JOIN clientes c ON a.cliente_id = c.id
-                  LEFT JOIN servicos s ON a.servico_id = s.id
-                  LEFT JOIN tecnicos t ON a.tecnico_id = t.id
-                  ORDER BY a.data_agendamento DESC";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute();
-        $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        require 'views/admin/agendamentos/index.php';
+        try {
+            // Verificar conexão com o banco
+            if (!$this->db) {
+                error_log("Erro: Conexão com o banco de dados falhou em AgendamentosController::index()");
+                set_flash_message('danger', 'Erro de conexão com o banco de dados.');
+                require 'views/admin/agendamentos/index.php';
+                return;
+            }
+            
+            // Buscar todos os agendamentos
+            $query = "SELECT a.*, c.nome as cliente_nome, s.titulo as servico_nome, t.nome as tecnico_nome
+                      FROM agendamentos a
+                      LEFT JOIN clientes c ON a.cliente_id = c.id
+                      LEFT JOIN servicos s ON a.servico_id = s.id
+                      LEFT JOIN tecnicos t ON a.tecnico_id = t.id
+                      ORDER BY a.data_agendamento DESC";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Verificar se há agendamentos
+            if (empty($agendamentos)) {
+                error_log("Aviso: Nenhum agendamento encontrado em AgendamentosController::index()");
+            }
+            
+            require 'views/admin/agendamentos/index.php';
+        } catch (PDOException $e) {
+            error_log("Erro PDO em AgendamentosController::index(): " . $e->getMessage());
+            set_flash_message('danger', 'Erro ao buscar agendamentos: ' . $e->getMessage());
+            $agendamentos = [];
+            require 'views/admin/agendamentos/index.php';
+        } catch (Exception $e) {
+            error_log("Erro geral em AgendamentosController::index(): " . $e->getMessage());
+            set_flash_message('danger', 'Erro inesperado: ' . $e->getMessage());
+            $agendamentos = [];
+            require 'views/admin/agendamentos/index.php';
+        }
     }
     
     public function calendario() {

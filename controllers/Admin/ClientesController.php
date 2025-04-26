@@ -12,13 +12,38 @@ class ClientesController {
     }
     
     public function index() {
-        // Buscar todos os clientes
-        $query = "SELECT * FROM clientes ORDER BY nome ASC";
-        $stmt = $this->db->prepare($query);
-        $stmt->execute();
-        $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        require 'views/admin/clientes/index.php';
+        try {
+            // Verificar conexão com o banco
+            if (!$this->db) {
+                error_log("Erro: Conexão com o banco de dados falhou em ClientesController::index()");
+                set_flash_message('danger', 'Erro de conexão com o banco de dados.');
+                require 'views/admin/clientes/index.php';
+                return;
+            }
+            
+            // Buscar todos os clientes
+            $query = "SELECT * FROM clientes ORDER BY nome ASC";
+            $stmt = $this->db->prepare($query);
+            $stmt->execute();
+            $clientes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Verificar se há clientes
+            if (empty($clientes)) {
+                error_log("Aviso: Nenhum cliente encontrado em ClientesController::index()");
+            }
+            
+            require 'views/admin/clientes/index.php';
+        } catch (PDOException $e) {
+            error_log("Erro PDO em ClientesController::index(): " . $e->getMessage());
+            set_flash_message('danger', 'Erro ao buscar clientes: ' . $e->getMessage());
+            $clientes = [];
+            require 'views/admin/clientes/index.php';
+        } catch (Exception $e) {
+            error_log("Erro geral em ClientesController::index(): " . $e->getMessage());
+            set_flash_message('danger', 'Erro inesperado: ' . $e->getMessage());
+            $clientes = [];
+            require 'views/admin/clientes/index.php';
+        }
     }
     
     public function create() {

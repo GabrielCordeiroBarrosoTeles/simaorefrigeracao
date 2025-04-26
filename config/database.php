@@ -1,9 +1,15 @@
 <?php
+// Configurações do banco de dados
+define('DB_HOST', 'localhost');
+define('DB_NAME', 'friocerto');
+define('DB_USER', 'root');
+define('DB_PASS', '');
+
 class Database {
-    private $host = 'localhost';
-    private $db_name = 'friocerto';
-    private $username = 'root';
-    private $password = '';
+    private $host = DB_HOST;
+    private $db_name = DB_NAME;
+    private $username = DB_USER;
+    private $password = DB_PASS;
     private $conn;
     
     // Método para conectar ao banco de dados
