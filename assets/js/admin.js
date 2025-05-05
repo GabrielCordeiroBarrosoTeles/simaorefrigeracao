@@ -1,84 +1,129 @@
 /**
- * FrioCerto - Painel Administrativo
- * JavaScript principal
+ * Admin Panel JavaScript
  */
 
 document.addEventListener("DOMContentLoaded", () => {
-  // Atualizar visualização do ícone ao digitar no campo de ícone
-  const iconeInput = document.getElementById("icone")
-  if (iconeInput) {
-    const iconePreview = iconeInput.parentElement.querySelector(".input-group-text i")
-
-    iconeInput.addEventListener("input", function () {
-      const iconeName = this.value.trim()
-      if (iconeName) {
-        iconePreview.className = "fas fa-" + iconeName
-      } else {
-        iconePreview.className = "fas fa-icons"
-      }
-    })
+  // Check if jQuery is already loaded
+  if (typeof jQuery === "undefined") {
+    // If not, attempt to load it from a CDN or other source
+    var script = document.createElement("script")
+    script.src = "https://code.jquery.com/jquery-3.6.0.min.js" // Or another jQuery CDN
+    script.type = "text/javascript"
+    script.onload = () => {
+      // jQuery is now loaded, continue with initialization
+      window.jQuery = jQuery // Declare jQuery in the global scope
+      initializeAdminPanel()
+    }
+    document.head.appendChild(script)
+  } else {
+    // jQuery is already loaded, proceed with initialization
+    initializeAdminPanel()
   }
 
-  // Inicializar tooltips
-  $(() => {
-    $('[data-toggle="tooltip"]').tooltip()
-  })
-
-  // Inicializar popovers
-  $(() => {
-    $('[data-toggle="popover"]').popover()
-  })
-
-  // Confirmação de exclusão
-  const deleteButtons = document.querySelectorAll(".btn-delete")
-  deleteButtons.forEach((button) => {
-    button.addEventListener("click", (e) => {
-      if (!confirm("Tem certeza que deseja excluir este item?")) {
+  function initializeAdminPanel() {
+    // Toggle sidebar
+    const sidebarToggle = document.getElementById("sidebarToggle")
+    if (sidebarToggle) {
+      sidebarToggle.addEventListener("click", (e) => {
         e.preventDefault()
-      }
-    })
-  })
+        document.querySelector(".sidebar").classList.toggle("active")
+        document.querySelector(".content-wrapper").classList.toggle("active")
+      })
+    }
 
-  // Máscara para telefone
-  const telefoneInput = document.getElementById("telefone")
-  if (telefoneInput) {
-    telefoneInput.addEventListener("input", (e) => {
-      let value = e.target.value.replace(/\D/g, "")
-
-      if (value.length > 0) {
-        value = "(" + value
-      }
-      if (value.length > 3) {
-        value = value.substring(0, 3) + ") " + value.substring(3)
-      }
-      if (value.length > 10) {
-        value = value.substring(0, 10) + "-" + value.substring(10)
-      }
-      if (value.length > 15) {
-        value = value.substring(0, 15)
-      }
-
-      e.target.value = value
-    })
-  }
-
-  // Sidebar toggle para dispositivos móveis
-  const sidebarToggle = document.querySelector('[data-widget="pushmenu"]')
-  if (sidebarToggle) {
-    sidebarToggle.addEventListener("click", () => {
-      document.body.classList.toggle("sidebar-collapse")
-      document.body.classList.toggle("sidebar-open")
-    })
-  }
-
-  // Auto-dismiss para alertas
-  const alerts = document.querySelectorAll(".alert:not(.alert-permanent)")
-  alerts.forEach((alert) => {
-    setTimeout(() => {
-      alert.classList.add("fade")
+    // Close alerts automatically
+    const alerts = document.querySelectorAll(".alert-dismissible")
+    alerts.forEach((alert) => {
       setTimeout(() => {
-        alert.remove()
-      }, 500)
-    }, 5000)
-  })
+        const closeButton = alert.querySelector(".close")
+        if (closeButton) {
+          closeButton.click()
+        } else {
+          alert.style.display = "none"
+        }
+      }, 5000)
+    })
+
+    // Confirm delete actions
+    const deleteButtons = document.querySelectorAll("[data-confirm]")
+    deleteButtons.forEach((button) => {
+      button.addEventListener("click", function (e) {
+        if (!confirm(this.getAttribute("data-confirm") || "Tem certeza que deseja excluir este item?")) {
+          e.preventDefault()
+        }
+      })
+    })
+
+    // Initialize tooltips
+    if (typeof jQuery !== "undefined" && typeof jQuery.fn.tooltip !== "undefined") {
+      jQuery('[data-toggle="tooltip"]').tooltip()
+    }
+
+    // Initialize popovers
+    if (typeof jQuery !== "undefined" && typeof jQuery.fn.popover !== "undefined") {
+      jQuery('[data-toggle="popover"]').popover()
+    }
+
+    // Custom file input
+    const customFileInputs = document.querySelectorAll(".custom-file-input")
+    customFileInputs.forEach((input) => {
+      input.addEventListener("change", function () {
+        const fileName = this.files[0] ? this.files[0].name : "Escolher arquivo"
+        const label = this.nextElementSibling
+        if (label) {
+          label.textContent = fileName
+        }
+      })
+    })
+
+    // Phone mask
+    const phoneInputs = document.querySelectorAll('input[name="telefone"]')
+    phoneInputs.forEach((input) => {
+      input.addEventListener("input", function () {
+        let value = this.value.replace(/\D/g, "")
+        if (value.length <= 10) {
+          value = value.replace(/(\d{2})(\d{4})(\d{4})/, "($1) $2-$3")
+        } else {
+          value = value.replace(/(\d{2})(\d{5})(\d{4})/, "($1) $2-$3")
+        }
+        this.value = value
+      })
+    })
+
+    // CEP mask
+    const cepInputs = document.querySelectorAll('input[name="cep"]')
+    cepInputs.forEach((input) => {
+      input.addEventListener("input", function () {
+        let value = this.value.replace(/\D/g, "")
+        value = value.replace(/(\d{5})(\d{3})/, "$1-$2")
+        this.value = value
+      })
+    })
+
+    // Fetch address by CEP
+    cepInputs.forEach((input) => {
+      input.addEventListener("blur", function () {
+        const cep = this.value.replace(/\D/g, "")
+        if (cep.length === 8) {
+          fetch(`https://viacep.com.br/ws/${cep}/json/`)
+            .then((response) => response.json())
+            .then((data) => {
+              if (!data.erro) {
+                const form = this.closest("form")
+                if (form) {
+                  const endereco = form.querySelector('input[name="endereco"]')
+                  const cidade = form.querySelector('input[name="cidade"]')
+                  const estado = form.querySelector('input[name="estado"]')
+
+                  if (endereco) endereco.value = data.logradouro
+                  if (cidade) cidade.value = data.localidade
+                  if (estado) estado.value = data.uf
+                }
+              }
+            })
+            .catch((error) => console.error("Erro ao buscar CEP:", error))
+        }
+      })
+    })
+  }
 })

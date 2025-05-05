@@ -128,7 +128,7 @@
                         </div>
                         <div class="contact-details">
                             <h4>Telefone</h4>
-                            <p><?= $configuracoes['telefone'] ?? '(85) 98810-6463' ?></p>
+                            <p><?= htmlspecialchars($configuracoes['telefone'] ?? '(85) 98810-6463') ?></p>
                         </div>
                     </div>
                     <div class="contact-method">
@@ -137,7 +137,7 @@
                         </div>
                         <div class="contact-details">
                             <h4>Email</h4>
-                            <p><?= $configuracoes['email'] ?? 'simaorefrigeracao2@gmail.com' ?></p>
+                            <p><?= htmlspecialchars($configuracoes['email'] ?? 'simaorefrigeracao2@gmail.com') ?></p>
                         </div>
                     </div>
                     <div class="contact-method">
@@ -146,7 +146,7 @@
                         </div>
                         <div class="contact-details">
                             <h4>Endereço</h4>
-                            <p><?= $configuracoes['endereco'] ?? 'Av. Sabino Monte, 3878 - São João do Tauape, Fortaleza - CE' ?></p>
+                            <p><?= htmlspecialchars($configuracoes['endereco'] ?? 'Av. Sabino Monte, 3878 - São João do Tauape, Fortaleza - CE') ?></p>
                         </div>
                     </div>
                 </div>

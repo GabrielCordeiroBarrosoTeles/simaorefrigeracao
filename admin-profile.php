@@ -153,6 +153,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     header('Location: admin-profile.php');
     exit;
 }
+
+// Função para obter mensagem flash (caso não esteja disponível)
+if (!function_exists('get_flash_message')) {
+    function get_flash_message() {
+        if (isset($_SESSION['flash_message'])) {
+            $message = $_SESSION['flash_message'];
+            unset($_SESSION['flash_message']);
+            return $message;
+        }
+        return null;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -631,7 +643,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         Configurações
                     </a>
                     <div class="dropdown-divider"></div>
-                    <a href="admin-dashboard.php?logout=1">
+                    <a href="logout.php">
                         <i class="fas fa-sign-out-alt"></i>
                         Sair
                     </a>
@@ -681,7 +693,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-cogs"></i>
                 Configurações
             </a>
-            <a href="admin-dashboard.php?logout=1" class="sidebar-menu-item">
+            <a href="logout.php" class="sidebar-menu-item">
                 <i class="fas fa-sign-out-alt"></i>
                 Sair
             </a>
@@ -813,6 +825,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         // Close sidebar when clicking outside on mobile
         document.addEventListener('click', function(e) {
             const sidebar = document.getElementById('sidebar');
+            const sidebarTog  {
+            const sidebar = document.getElementById('sidebar');
             const sidebarToggle = document.getElementById('sidebarToggle');
             
             if (window.innerWidth < 992 && 
@@ -836,3 +850,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </script>
 </body>
 </html>
+
+Vamos criar um arquivo para corrigir o problema de visualização das tabelas e garantir que o logout funcione corretamente:
+
+Vamos criar um arquivo para verificar e corrigir as tabelas no banco de dados:

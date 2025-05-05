@@ -1,3 +1,17 @@
+<?php
+// Obter configurações do banco de dados se ainda não estiverem disponíveis
+if (!isset($configuracoes) || empty($configuracoes)) {
+    try {
+        $db = db_connect();
+        $query = "SELECT * FROM configuracoes LIMIT 1";
+        $stmt = $db->prepare($query);
+        $stmt->execute();
+        $configuracoes = $stmt->fetch(PDO::FETCH_ASSOC);
+    } catch (PDOException $e) {
+        // Silenciar erro
+    }
+}
+?>
 <!-- Footer -->
     <footer class="footer">
         <div class="container">
@@ -38,15 +52,15 @@
                     <ul>
                         <li>
                             <i class="fas fa-phone"></i>
-                            <span>(85) 98810-6463</span>
+                            <span><?= htmlspecialchars($configuracoes['telefone'] ?? '(85) 98810-6463') ?></span>
                         </li>
                         <li>
                             <i class="fas fa-envelope"></i>
-                            <span>simaorefrigeracao2@gmail.com</span>
+                            <span><?= htmlspecialchars($configuracoes['email'] ?? 'simaorefrigeracao2@gmail.com') ?></span>
                         </li>
                         <li>
                             <i class="fas fa-map-marker-alt"></i>
-                            <span>Av. Sabino Monte, 3878 - São João do Tauape, Fortaleza - CE</span>
+                            <span><?= htmlspecialchars($configuracoes['endereco'] ?? 'Av. Sabino Monte, 3878 - São João do Tauape, Fortaleza - CE') ?></span>
                         </li>
                     </ul>
                     

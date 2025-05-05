@@ -62,6 +62,16 @@ function set_flash_message($type, $message) {
     ];
 }
 
+// Obter mensagem flash
+function get_flash_message() {
+    if (isset($_SESSION["flash_message"])) {
+        $message = $_SESSION["flash_message"];
+        unset($_SESSION["flash_message"]);
+        return $message;
+    }
+    return null;
+}
+
 // Exibir mensagem flash
 function display_flash_message() {
     if (isset($_SESSION['flash_message'])) {
