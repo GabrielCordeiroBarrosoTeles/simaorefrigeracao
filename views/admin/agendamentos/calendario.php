@@ -3,7 +3,7 @@
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Calendário de Agendamentos</h1>
-        <a href="/simaorefrigeracao/admin/agendamentos/novo" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+        <a href="/admin/agendamentos/novo" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
             <i class="fas fa-plus fa-sm text-white-50"></i> Novo Agendamento
         </a>
     </div>
@@ -14,7 +14,7 @@
         <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
             <h6 class="m-0 font-weight-bold text-primary">Calendário</h6>
             <div class="dropdown no-arrow">
-                <a href="/simaorefrigeracao/admin/agendamentos" class="btn btn-sm btn-info">
+                <a href="/admin/agendamentos" class="btn btn-sm btn-info">
                     <i class="fas fa-list fa-sm"></i> Ver Lista
                 </a>
             </div>
@@ -72,7 +72,13 @@
                 center: 'title',
                 right: 'dayGridMonth,timeGridWeek,timeGridDay'
             },
-            events: '/simaorefrigeracao/admin/agendamentos/api',
+            events: {
+                url: '/admin/agendamentos/api?action=get',
+                failure: function() {
+                    console.error('Erro ao carregar eventos');
+                    alert('Erro ao carregar eventos. Por favor, tente novamente.');
+                }
+            },
             eventClick: function(info) {
                 // Preencher o modal com os detalhes do evento
                 $('#eventTitle').text(info.event.title);
@@ -91,7 +97,7 @@
                 $('#eventNotes').text(info.event.extendedProps.observacoes || 'Nenhuma observação');
                 
                 // Configurar o link de edição
-                $('#editEvent').attr('href', '/simaorefrigeracao/admin/agendamentos/editar?id=' + info.event.id);
+                $('#editEvent').attr('href', '/admin/agendamentos/editar?id=' + info.event.id);
                 
                 // Mostrar o modal
                 $('#eventModal').modal('show');

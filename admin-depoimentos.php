@@ -3,117 +3,27 @@ require_once 'bootstrap.php';
 
 // Verificar se o usuário está logado
 if (!is_logged_in()) {
-    redirect('/admin/login');
+    redirect('admin-login.php');
 }
 
 // Conexão com o banco de dados
 $db = db_connect();
 
 // Processar ações
-if (isset($_GET['action'])) {
-    $action = $_GET['action'];
-    $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-    
-    if ($action === 'aprovar' && $id > 0) {
-        try {
-            $query = "UPDATE depoimentos SET aprovado = 1 WHERE id = :id";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':id', $id);
-            
-            if ($stmt->execute()) {
-                set_flash_message('success', 'Depoimento aprovado com sucesso!');
-            } else {
-                set_flash_message('danger', 'Erro ao aprovar depoimento.');
-            }
-        } catch (PDOException $e) {
-            set_flash_message('danger', 'Erro ao processar sua solicitação.');
-            if (DEBUG_MODE) {
-                $_SESSION['error_details'] = $e->getMessage();
-            }
-        }
-        
-        redirect('/admin-depoimentos.php');
-    }
-    
-    if ($action === 'reprovar' && $id > 0) {
-        try {
-            $query = "UPDATE depoimentos SET aprovado = 0 WHERE id = :id";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':id', $id);
-            
-            if ($stmt->execute()) {
-                set_flash_message('success', 'Depoimento reprovado com sucesso!');
-            } else {
-                set_flash_message('danger', 'Erro ao reprovar depoimento.');
-            }
-        } catch (PDOException $e) {
-            set_flash_message('danger', 'Erro ao processar sua solicitação.');
-            if (DEBUG_MODE) {
-                $_SESSION['error_details'] = $e->getMessage();
-            }
-        }
-        
-        redirect('/admin-depoimentos.php');
-    }
-    
-    if ($action === 'excluir' && $id > 0) {
-        try {
-            $query = "DELETE FROM depoimentos WHERE id = :id";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':id', $id);
-            
-            if ($stmt->execute()) {
-                set_flash_message('success', 'Depoimento excluído com sucesso!');
-            } else {
-                set_flash_message('danger', 'Erro ao excluir depoimento.');
-            }
-        } catch (PDOException $e) {
-            set_flash_message('danger', 'Erro ao processar sua solicitação.');
-            if (DEBUG_MODE) {
-                $_SESSION['error_details'] = $e->getMessage();
-            }
-        }
-        
-        redirect('/admin-depoimentos.php');
-    }
-}
+$action = isset($_GET['action']) ? $_GET['action'] : '';
+$id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
-// Processar formulário de adição/edição
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    $nome = sanitize($_POST['nome'] ?? '');
-    $cargo = sanitize($_POST['cargo'] ?? '');
-    $empresa = sanitize($_POST['empresa'] ?? '');
-    $texto = sanitize($_POST['texto'] ?? '');
-    $aprovado = isset($_POST['aprovado']) ? 1 : 0;
-    
-    if (empty($nome) || empty($texto)) {
-        set_flash_message('danger', 'Por favor, preencha os campos obrigatórios.');
-        redirect('/admin-depoimentos.php');
-    }
-    
+// Processar exclusão
+if ($action === 'delete' && $id > 0) {
     try {
-        if ($id > 0) {
-            // Atualizar depoimento existente
-            $query = "UPDATE depoimentos SET nome = :nome, cargo = :cargo, empresa = :empresa, texto = :texto, aprovado = :aprovado WHERE id = :id";
-            $stmt = $db->prepare($query);
-            $stmt->bindParam(':id', $id);
-        } else {
-            // Adicionar novo depoimento
-            $query = "INSERT INTO depoimentos (nome, cargo, empresa, texto, aprovado, data_criacao) VALUES (:nome, :cargo, :empresa, :texto, :aprovado, NOW())";
-            $stmt = $db->prepare($query);
-        }
-        
-        $stmt->bindParam(':nome', $nome);
-        $stmt->bindParam(':cargo', $cargo);
-        $stmt->bindParam(':empresa', $empresa);
-        $stmt->bindParam(':texto', $texto);
-        $stmt->bindParam(':aprovado', $aprovado);
+        $query = "DELETE FROM depoimentos WHERE id = :id";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':id', $id);
         
         if ($stmt->execute()) {
-            set_flash_message('success', ($id > 0 ? 'Depoimento atualizado' : 'Depoimento adicionado') . ' com sucesso!');
+            set_flash_message('success', 'Depoimento excluído com sucesso!');
         } else {
-            set_flash_message('danger', 'Erro ao ' . ($id > 0 ? 'atualizar' : 'adicionar') . ' depoimento.');
+            set_flash_message('danger', 'Erro ao excluir depoimento.');
         }
     } catch (PDOException $e) {
         set_flash_message('danger', 'Erro ao processar sua solicitação.');
@@ -122,36 +32,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
     
-    redirect('/admin-depoimentos.php');
+    redirect('admin-depoimentos.php');
 }
 
-// Buscar depoimento para edição
-$depoimento_edicao = null;
-if (isset($_GET['edit']) && (int)$_GET['edit'] > 0) {
-    $id = (int)$_GET['edit'];
-    
+// Processar alteração de status
+if ($action === 'toggle' && $id > 0) {
     try {
-        $query = "SELECT * FROM depoimentos WHERE id = :id LIMIT 1";
+        // Primeiro, buscar o status atual
+        $query = "SELECT ativo FROM depoimentos WHERE id = :id";
         $stmt = $db->prepare($query);
         $stmt->bindParam(':id', $id);
         $stmt->execute();
+        $depoimento = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        $depoimento_edicao = $stmt->fetch(PDO::FETCH_ASSOC);
+        if ($depoimento) {
+            // Inverter o status
+            $novo_status = $depoimento['ativo'] ? 0 : 1;
+            
+            $query = "UPDATE depoimentos SET ativo = :ativo WHERE id = :id";
+            $stmt = $db->prepare($query);
+            $stmt->bindParam(':ativo', $novo_status);
+            $stmt->bindParam(':id', $id);
+            
+            if ($stmt->execute()) {
+                $status_text = $novo_status ? 'ativado' : 'desativado';
+                set_flash_message('success', "Depoimento {$status_text} com sucesso!");
+            } else {
+                set_flash_message('danger', 'Erro ao atualizar status do depoimento.');
+            }
+        } else {
+            set_flash_message('danger', 'Depoimento não encontrado.');
+        }
     } catch (PDOException $e) {
-        set_flash_message('danger', 'Erro ao buscar depoimento para edição.');
+        set_flash_message('danger', 'Erro ao processar sua solicitação.');
         if (DEBUG_MODE) {
             $_SESSION['error_details'] = $e->getMessage();
         }
     }
+    
+    redirect('admin-depoimentos.php');
 }
 
 // Buscar todos os depoimentos
 $depoimentos = [];
 try {
-    $query = "SELECT * FROM depoimentos ORDER BY data_criacao DESC";
+    $query = "SELECT d.*, c.nome as cliente_nome 
+              FROM depoimentos d
+              LEFT JOIN clientes c ON d.cliente_id = c.id
+              ORDER BY d.data_criacao DESC";
     $stmt = $db->prepare($query);
     $stmt->execute();
-    
     $depoimentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
     set_flash_message('danger', 'Erro ao buscar depoimentos.');
@@ -160,140 +90,80 @@ try {
     }
 }
 
-// Incluir cabeçalho
+// Título da página
+$page_title = 'Depoimentos';
+
+// Incluir o cabeçalho
+$page_title = 'Depoimentos';
 include 'views/admin/includes/header.php';
 ?>
 
-<div class="container-fluid px-4">
-    <h1 class="mt-4">Gerenciar Depoimentos</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="admin-dashboard.php">Dashboard</a></li>
-        <li class="breadcrumb-item active">Depoimentos</li>
-    </ol>
+<div class="container-fluid">
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="h3 mb-0 text-gray-800">Depoimentos</h1>
+        <a href="admin-form.php?table=depoimentos&action=create" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+            <i class="fas fa-plus fa-sm text-white-50"></i> Novo Depoimento
+        </a>
+    </div>
     
     <?php display_flash_message(); ?>
     
-    <div class="row">
-        <div class="col-lg-4">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-comment-dots me-1"></i>
-                    <?= $depoimento_edicao ? 'Editar Depoimento' : 'Adicionar Depoimento' ?>
-                </div>
-                <div class="card-body">
-                    <form method="post" action="admin-depoimentos.php">
-                        <?php if ($depoimento_edicao): ?>
-                            <input type="hidden" name="id" value="<?= $depoimento_edicao['id'] ?>">
-                        <?php endif; ?>
-                        
-                        <div class="mb-3">
-                            <label for="nome" class="form-label">Nome <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="nome" name="nome" value="<?= $depoimento_edicao ? htmlspecialchars($depoimento_edicao['nome']) : '' ?>" required>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="cargo" class="form-label">Cargo</label>
-                            <input type="text" class="form-control" id="cargo" name="cargo" value="<?= $depoimento_edicao ? htmlspecialchars($depoimento_edicao['cargo'] ?? '') : '' ?>">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="empresa" class="form-label">Empresa</label>
-                            <input type="text" class="form-control" id="empresa" name="empresa" value="<?= $depoimento_edicao ? htmlspecialchars($depoimento_edicao['empresa'] ?? '') : '' ?>">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="texto" class="form-label">Depoimento <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="texto" name="texto" rows="4" required><?= $depoimento_edicao ? htmlspecialchars($depoimento_edicao['texto']) : '' ?></textarea>
-                        </div>
-                        
-                        <div class="mb-3 form-check">
-                            <input type="checkbox" class="form-check-input" id="aprovado" name="aprovado" <?= ($depoimento_edicao && isset($depoimento_edicao['aprovado']) && $depoimento_edicao['aprovado'] == 1) ? 'checked' : '' ?>>
-                            <label class="form-check-label" for="aprovado">Aprovado</label>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary"><?= $depoimento_edicao ? 'Atualizar' : 'Adicionar' ?></button>
-                        
-                        <?php if ($depoimento_edicao): ?>
-                            <a href="admin-depoimentos.php" class="btn btn-secondary">Cancelar</a>
-                        <?php endif; ?>
-                    </form>
-                </div>
-            </div>
+    <div class="card shadow mb-4">
+        <div class="card-header py-3">
+            <h6 class="m-0 font-weight-bold text-primary">Todos os Depoimentos</h6>
         </div>
-        
-        <div class="col-lg-8">
-            <div class="card mb-4">
-                <div class="card-header">
-                    <i class="fas fa-table me-1"></i>
-                    Lista de Depoimentos
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
-                            <thead>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                    <thead>
+                        <tr>
+                            <th>Cliente</th>
+                            <th>Avaliação</th>
+                            <th>Depoimento</th>
+                            <th>Data</th>
+                            <th>Status</th>
+                            <th>Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (!empty($depoimentos)): ?>
+                            <?php foreach ($depoimentos as $depoimento): ?>
                                 <tr>
-                                    <th>Nome</th>
-                                    <th>Cargo/Empresa</th>
-                                    <th>Depoimento</th>
-                                    <th>Status</th>
-                                    <th>Data</th>
-                                    <th>Ações</th>
+                                    <td><?= htmlspecialchars($depoimento['cliente_nome'] ?? 'Cliente Anônimo') ?></td>
+                                    <td>
+                                        <?php for ($i = 1; $i <= 5; $i++): ?>
+                                            <i class="fas fa-star <?= $i <= $depoimento['avaliacao'] ? 'text-warning' : 'text-muted' ?>"></i>
+                                        <?php endfor; ?>
+                                    </td>
+                                    <td><?= htmlspecialchars(substr($depoimento['texto'], 0, 100)) . (strlen($depoimento['texto']) > 100 ? '...' : '') ?></td>
+                                    <td><?= date('d/m/Y', strtotime($depoimento['data_criacao'])) ?></td>
+                                    <td>
+                                        <?php if ($depoimento['ativo']): ?>
+                                            <span class="badge badge-success">Ativo</span>
+                                        <?php else: ?>
+                                            <span class="badge badge-secondary">Inativo</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <a href="admin-form.php?table=depoimentos&action=edit&id=<?= $depoimento['id'] ?>" class="btn btn-sm btn-info">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="admin-depoimentos.php?action=toggle&id=<?= $depoimento['id'] ?>" class="btn btn-sm <?= $depoimento['ativo'] ? 'btn-secondary' : 'btn-success' ?>">
+                                            <i class="fas <?= $depoimento['ativo'] ? 'fa-eye-slash' : 'fa-eye' ?>"></i>
+                                        </a>
+                                        <a href="admin-depoimentos.php?action=delete&id=<?= $depoimento['id'] ?>" class="btn btn-sm btn-danger" onclick="return confirm('Tem certeza que deseja excluir este depoimento?');">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
                                 </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($depoimentos)): ?>
-                                    <tr>
-                                        <td colspan="6" class="text-center">Nenhum depoimento encontrado.</td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($depoimentos as $depoimento): ?>
-                                        <tr>
-                                            <td><?= htmlspecialchars($depoimento['nome']) ?></td>
-                                            <td>
-                                                <?php if (!empty($depoimento['cargo'] ?? '')): ?>
-                                                    <?= htmlspecialchars($depoimento['cargo']) ?>
-                                                    <?= !empty($depoimento['empresa'] ?? '') ? ' - ' . htmlspecialchars($depoimento['empresa']) : '' ?>
-                                                <?php else: ?>
-                                                    <?= !empty($depoimento['empresa'] ?? '') ? htmlspecialchars($depoimento['empresa']) : '-' ?>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><?= truncate(htmlspecialchars($depoimento['texto']), 100) ?></td>
-                                            <td>
-                                                <?php if (isset($depoimento['aprovado']) && $depoimento['aprovado'] == 1): ?>
-                                                    <span class="badge bg-success">Aprovado</span>
-                                                <?php else: ?>
-                                                    <span class="badge bg-warning text-dark">Pendente</span>
-                                                <?php endif; ?>
-                                            </td>
-                                            <td><?= date('d/m/Y', strtotime($depoimento['data_criacao'])) ?></td>
-                                            <td>
-                                                <div class="btn-group" role="group">
-                                                    <a href="admin-depoimentos.php?edit=<?= $depoimento['id'] ?>" class="btn btn-sm btn-primary" title="Editar">
-                                                        <i class="fas fa-edit"></i>
-                                                    </a>
-                                                    
-                                                    <?php if (isset($depoimento['aprovado']) && $depoimento['aprovado'] == 1): ?>
-                                                        <a href="admin-depoimentos.php?action=reprovar&id=<?= $depoimento['id'] ?>" class="btn btn-sm btn-warning" title="Reprovar">
-                                                            <i class="fas fa-times"></i>
-                                                        </a>
-                                                    <?php else: ?>
-                                                        <a href="admin-depoimentos.php?action=aprovar&id=<?= $depoimento['id'] ?>" class="btn btn-sm btn-success" title="Aprovar">
-                                                            <i class="fas fa-check"></i>
-                                                        </a>
-                                                    <?php endif; ?>
-                                                    
-                                                    <a href="admin-depoimentos.php?action=excluir&id=<?= $depoimento['id'] ?>" class="btn btn-sm btn-danger" title="Excluir" onclick="return confirm('Tem certeza que deseja excluir este depoimento?')">
-                                                        <i class="fas fa-trash"></i>
-                                                    </a>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                            <?php endforeach; ?>
+                        <?php else: ?>
+                            <tr>
+                                <td colspan="6" class="text-center">Nenhum depoimento encontrado.</td>
+                            </tr>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
