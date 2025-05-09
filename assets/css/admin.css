@@ -19,12 +19,17 @@ body {
   background-color: #f8fafc;
   color: #1e293b;
   font-size: 0.9rem;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
 }
 
-.wrapper {
+/* Admin Wrapper */
+.admin-wrapper {
   display: flex;
   width: 100%;
   min-height: 100vh;
+  position: relative;
 }
 
 /* Sidebar */
@@ -39,6 +44,11 @@ body {
   z-index: 999;
   transition: all 0.3s;
   box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  overflow-y: auto;
+}
+
+.sidebar.toggled {
+  margin-left: calc(-1 * var(--sidebar-width));
 }
 
 .sidebar-header {
@@ -111,73 +121,36 @@ body {
   background-color: var(--primary);
 }
 
-/* Content */
-.content-wrapper {
-  width: calc(100% - var(--sidebar-width));
+/* Main Content */
+.main-content {
+  flex: 1;
   margin-left: var(--sidebar-width);
-  min-height: 100vh;
   transition: all 0.3s;
   display: flex;
   flex-direction: column;
+  width: calc(100% - var(--sidebar-width));
 }
 
-/* Header */
-.header {
-  height: var(--header-height);
-  background-color: #fff;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 25px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+.main-content.toggled {
+  margin-left: 0;
+  width: 100%;
 }
 
-.header-title {
-  font-size: 1.2rem;
-  font-weight: 600;
-  color: var(--dark);
-}
-
-.user-dropdown .dropdown-toggle {
-  display: flex;
-  align-items: center;
-  text-decoration: none;
-  color: var(--dark);
-}
-
-.user-dropdown .dropdown-toggle::after {
-  display: none;
-}
-
-.user-dropdown .dropdown-toggle img {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  margin-right: 10px;
-  object-fit: cover;
-}
-
-.user-dropdown .dropdown-toggle .user-info {
-  display: flex;
-  flex-direction: column;
-  margin-right: 10px;
-}
-
-.user-dropdown .dropdown-toggle .user-name {
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.user-dropdown .dropdown-toggle .user-role {
-  font-size: 0.75rem;
-  color: var(--secondary);
-}
-
-/* Main Content */
-.container-fluid {
-  padding: 25px;
+/* Content */
+.content {
+  padding: 0 20px 20px 20px;
   flex: 1;
+}
+
+/* Topbar */
+.topbar {
+  height: var(--header-height);
+  margin-bottom: 0 !important;
+}
+
+/* Container Fluid */
+.container-fluid {
+  padding: 0;
 }
 
 /* Cards */
@@ -198,6 +171,58 @@ body {
 
 .card-body {
   padding: 20px;
+}
+
+/* Dashboard Cards */
+.dashboard-card {
+  transition: all 0.3s ease;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.dashboard-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-card .card-body {
+  padding: 1.5rem;
+}
+
+.dashboard-card .h1 {
+  font-size: 2.5rem;
+  margin-top: 0.5rem;
+}
+
+.icon-circle {
+  height: 60px;
+  width: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0.5rem;
+}
+
+.card-footer {
+  padding: 0.75rem 1.5rem;
+  background-color: rgba(0, 0, 0, 0.03);
+}
+
+.border-left-primary {
+  border-left: 4px solid #4e73df !important;
+}
+
+.border-left-success {
+  border-left: 4px solid #1cc88a !important;
+}
+
+.border-left-info {
+  border-left: 4px solid #36b9cc !important;
+}
+
+.border-left-warning {
+  border-left: 4px solid #f6c23e !important;
 }
 
 /* Tables */
@@ -281,64 +306,50 @@ body {
   background-color: var(--primary) !important;
 }
 
-/* Dashboard Cards */
-.dashboard-card {
-  border-radius: 10px;
-  padding: 20px;
-  height: 100%;
-  transition: all 0.3s;
-}
-
-.dashboard-card:hover {
-  transform: translateY(-5px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-}
-
-.dashboard-card .icon {
-  font-size: 2.5rem;
-  margin-bottom: 15px;
-}
-
-.dashboard-card .count {
-  font-size: 2rem;
-  font-weight: 700;
-  margin-bottom: 5px;
-}
-
-.dashboard-card .title {
-  font-size: 1rem;
-  color: var(--secondary);
-}
-
 /* Responsive */
 @media (max-width: 768px) {
   .sidebar {
     margin-left: calc(-1 * var(--sidebar-width));
   }
 
-  .sidebar.active {
+  .sidebar.toggled {
     margin-left: 0;
   }
 
-  .content-wrapper {
+  .main-content {
+    margin-left: 0;
     width: 100%;
-    margin-left: 0;
   }
 
-  .content-wrapper.active {
+  .main-content.toggled {
     margin-left: var(--sidebar-width);
+    width: calc(100% - var(--sidebar-width));
   }
 
-  .sidebar-toggle {
-    display: block;
+  .dashboard-card .h1 {
+    font-size: 1.8rem;
   }
 
-  .dashboard-card .count {
-    font-size: 1.5rem;
+  .icon-circle {
+    height: 50px;
+    width: 50px;
   }
 
-  .dashboard-card .icon {
-    font-size: 2rem;
+  /* Melhorar a visualização de tabelas em dispositivos móveis */
+  .table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Ajustar tamanho dos botões em dispositivos móveis */
+  .btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  /* Melhorar visualização de formulários em dispositivos móveis */
+  .form-control {
+    font-size: 16px; /* Evita zoom automático em iOS */
   }
 }
 
@@ -420,7 +431,7 @@ body {
 /* Mobile Responsive Improvements */
 @media (max-width: 576px) {
   .container-fluid {
-    padding: 15px;
+    padding: 10px;
   }
 
   .card-body {
@@ -450,4 +461,104 @@ body {
   .user-dropdown .dropdown-toggle .user-info {
     display: none;
   }
+
+  /* Melhorar a visualização de tabelas em dispositivos móveis */
+  .table td,
+  .table th {
+    padding: 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  /* Ajustar tamanho dos botões em dispositivos móveis */
+  .btn-sm {
+    padding: 3px 6px;
+    font-size: 0.7rem;
+  }
+
+  /* Melhorar visualização de formulários em dispositivos móveis */
+  .form-group {
+    margin-bottom: 0.5rem;
+  }
+
+  .form-label {
+    font-size: 0.8rem;
+  }
+}
+
+/* Correção específica para o espaçamento do dashboard */
+.navbar {
+  margin-bottom: 0 !important;
+}
+
+.content {
+  padding-top: 0 !important;
+}
+
+.content-wrapper {
+  padding: 0 !important;
+}
+
+.wrapper {
+  padding: 0 !important;
+}
+
+/* Correção para o espaçamento entre a navbar e o conteúdo */
+.navbar.mb-4 {
+  margin-bottom: 0 !important;
+}
+
+/* Correção para o espaçamento no admin-dashboard.php */
+.d-sm-flex.align-items-center.justify-content-between.mb-4 {
+  margin-top: 0 !important;
+  padding-top: 1rem !important;
+}
+
+/* Correção para o espaçamento no admin-table.php */
+.container-fluid > .d-sm-flex {
+  margin-top: 0 !important;
+  padding-top: 1rem !important;
+}
+
+/* Correção para o espaçamento no admin-calendario.php */
+.content-wrapper .container-fluid {
+  padding-top: 0 !important;
+}
+
+/* Melhorias para responsividade em dispositivos móveis */
+@media (max-width: 768px) {
+  /* Garantir que o botão de toggle do sidebar seja visível */
+  #sidebarToggleTop {
+    display: block !important;
+    margin-right: 10px;
+  }
+
+  /* Ajustar o tamanho do texto no cabeçalho */
+  .navbar .navbar-brand {
+    font-size: 1rem;
+  }
+
+  /* Melhorar a visualização de tabelas */
+  .table-responsive {
+    border: 0;
+  }
+
+  /* Ajustar o espaçamento dos cards */
+  .card {
+    margin-bottom: 15px;
+  }
+
+  /* Melhorar a visualização de formulários */
+  .form-row > [class*="col-"] {
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+}
+
+/* Estilos para o modal de logout */
+#logoutModal .modal-header {
+  border-bottom: none;
+}
+
+#logoutModal .modal-footer {
+  border-top: none;
 }

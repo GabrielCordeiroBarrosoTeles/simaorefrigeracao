@@ -42,9 +42,14 @@
                     </ul>
                 </nav>
                 
-                <div class="header-actions">
-                    <a href="#contato" class="btn btn-primary">
-                        <i class="fas fa-phone"></i> Contato
+                <div class="header-actions" style="display: flex; gap: 16px;"></div>
+                    <a href="#contato" class="btn btn-primary" style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fas fa-phone"></i>
+                        <span>Contato</span>
+                    </a>
+                    <a href="admin-login.php" class="btn btn-secondary" style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; border-radius: 4px; background-color: #6c757d; color: #fff; text-decoration: none; transition: background-color 0.3s ease;">
+                        <i class="fas fa-user" style="font-size: 16px;"></i>
+                        <span style="font-weight: 500;">Login</span>
                     </a>
                 </div>
                 

@@ -244,7 +244,7 @@ $page_icon = $table_config[$table]['icon'];
                                                 </td>
                                             <?php elseif ($table === 'tecnicos'): ?>
                                                 <td><?= $row['id'] ?></td>
-                                                <td><?= $row['nome'] ?></td>
+                                                <td><i class="fas fa-user-hard-hat mr-1"></i> <?= $row['nome'] ?></td>
                                                 <td><?= $row['email'] ?></td>
                                                 <td><?= $row['telefone'] ?></td>
                                                 <td><?= $row['especialidade'] ?></td>

@@ -419,7 +419,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <div class="input-icon">
                         <i class="fas fa-lock"></i>
                         <input type="password" id="senha" name="senha" placeholder="Sua senha" required>
-                        <button type="button" class="password-toggle" onclick="togglePassword()">
+                        <button type="button" class="password-toggle" onclick="togglePassword()" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%);">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>

@@ -173,219 +173,187 @@ function process_image_upload($file, $upload_dir, $prefix = '') {
 
 // Definir título da página
 $page_title = 'Configurações do Site';
+
+// Incluir o cabeçalho
+include 'views/admin/includes/header.php';
 ?>
 
-<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $page_title ?> | <?= SITE_NAME ?></title>
-    
-    <!-- CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="assets/css/admin.css">
-</head>
-<body>
-    <div class="wrapper">
-        <!-- Sidebar -->
-        <?php include 'views/admin/includes/sidebar.php'; ?>
-        
-        <!-- Content -->
-        <div class="content-wrapper">
-            <!-- Header -->
-            <?php include 'views/admin/includes/header.php'; ?>
-            
-            <!-- Main Content -->
-            <div class="container-fluid">
-                <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                    <h1 class="h3 mb-0 text-gray-800">
-                        <i class="fas fa-cogs mr-2"></i> <?= $page_title ?>
-                    </h1>
+<div class="d-sm-flex align-items-center justify-content-between mb-4">
+    <h1 class="h3 mb-0 text-gray-800">
+        <i class="fas fa-cogs mr-2"></i> <?= $page_title ?>
+    </h1>
+</div>
+
+<?php display_flash_message(); ?>
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Configurações Gerais</h6>
+    </div>
+    <div class="card-body">
+        <form action="admin-settings.php" method="post" enctype="multipart/form-data">
+            <div class="row">
+                <div class="col-md-6">
+                    <h5 class="mb-3">Informações da Empresa</h5>
+                    
+                    <div class="form-group">
+                        <label for="nome_empresa">Nome da Empresa *</label>
+                        <input type="text" class="form-control" id="nome_empresa" name="nome_empresa" value="<?= $config['nome_empresa'] ?? '' ?>" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="descricao_empresa">Descrição da Empresa</label>
+                        <textarea class="form-control" id="descricao_empresa" name="descricao_empresa" rows="3"><?= $config['descricao_empresa'] ?? '' ?></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="telefone">Telefone</label>
+                        <input type="text" class="form-control" id="telefone" name="telefone" value="<?= $config['telefone'] ?? '' ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" class="form-control" id="email" name="email" value="<?= $config['email'] ?? '' ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="endereco">Endereço</label>
+                        <textarea class="form-control" id="endereco" name="endereco" rows="2"><?= $config['endereco'] ?? '' ?></textarea>
+                    </div>
                 </div>
                 
-                <?php display_flash_message(); ?>
-                
-                <div class="card shadow mb-4">
-                    <div class="card-header py-3">
-                        <h6 class="m-0 font-weight-bold text-primary">Configurações Gerais</h6>
+                <div class="col-md-6">
+                    <h5 class="mb-3">Seção Hero</h5>
+                    
+                    <div class="form-group">
+                        <label for="titulo_hero">Título do Hero</label>
+                        <input type="text" class="form-control" id="titulo_hero" name="titulo_hero" value="<?= $config['titulo_hero'] ?? '' ?>">
                     </div>
-                    <div class="card-body">
-                        <form action="admin-settings.php" method="post" enctype="multipart/form-data">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <h5 class="mb-3">Informações da Empresa</h5>
-                                    
-                                    <div class="form-group">
-                                        <label for="nome_empresa">Nome da Empresa *</label>
-                                        <input type="text" class="form-control" id="nome_empresa" name="nome_empresa" value="<?= $config['nome_empresa'] ?? '' ?>" required>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="descricao_empresa">Descrição da Empresa</label>
-                                        <textarea class="form-control" id="descricao_empresa" name="descricao_empresa" rows="3"><?= $config['descricao_empresa'] ?? '' ?></textarea>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="telefone">Telefone</label>
-                                        <input type="text" class="form-control" id="telefone" name="telefone" value="<?= $config['telefone'] ?? '' ?>">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="email">Email</label>
-                                        <input type="email" class="form-control" id="email" name="email" value="<?= $config['email'] ?? '' ?>">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="endereco">Endereço</label>
-                                        <textarea class="form-control" id="endereco" name="endereco" rows="2"><?= $config['endereco'] ?? '' ?></textarea>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <h5 class="mb-3">Seção Hero</h5>
-                                    
-                                    <div class="form-group">
-                                        <label for="titulo_hero">Título do Hero</label>
-                                        <input type="text" class="form-control" id="titulo_hero" name="titulo_hero" value="<?= $config['titulo_hero'] ?? '' ?>">
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="subtitulo_hero">Subtítulo do Hero</label>
-                                        <textarea class="form-control" id="subtitulo_hero" name="subtitulo_hero" rows="2"><?= $config['subtitulo_hero'] ?? '' ?></textarea>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="imagem_hero">Imagem do Hero</label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" id="imagem_hero" name="imagem_hero">
-                                            <label class="custom-file-label" for="imagem_hero">Escolher arquivo</label>
-                                        </div>
-                                        <?php if (!empty($config['imagem_hero'])): ?>
-                                        <div class="mt-2">
-                                            <img src="uploads/<?= $config['imagem_hero'] ?>" alt="Imagem Hero" class="img-thumbnail" style="max-height: 100px;">
-                                        </div>
-                                        <?php endif; ?>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="imagem_sobre">Imagem da Seção Sobre</label>
-                                        <div class="custom-file">
-                                            <input type="file" class="custom-file-input" id="imagem_sobre" name="imagem_sobre">
-                                            <label class="custom-file-label" for="imagem_sobre">Escolher arquivo</label>
-                                        </div>  for="imagem_sobre">Escolher arquivo</label>
-                                        </div>
-                                        <?php if (!empty($config['imagem_sobre'])): ?>
-                                        <div class="mt-2">
-                                            <img src="uploads/<?= $config['imagem_sobre'] ?>" alt="Imagem Sobre" class="img-thumbnail" style="max-height: 100px;">
-                                        </div>
-                                        <?php endif; ?>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="row mt-4">
-                                <div class="col-md-12">
-                                    <h5 class="mb-3">Redes Sociais</h5>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="facebook">Facebook</label>
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text"><i class="fab fa-facebook"></i></span>
-                                            </div>
-                                            <input type="text" class="form-control" id="facebook" name="facebook" value="<?= $config['facebook'] ?? '' ?>" placeholder="URL do Facebook">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="instagram">Instagram</label>
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text"><i class="fab fa-instagram"></i></span>
-                                            </div>
-                                            <input type="text" class="form-control" id="instagram" name="instagram" value="<?= $config['instagram'] ?? '' ?>" placeholder="URL do Instagram">
-                                        </div>
-                                    </div>
-                                </div>
-                                
-                                <div class="col-md-6">
-                                    <div class="form-group">
-                                        <label for="linkedin">LinkedIn</label>
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text"><i class="fab fa-linkedin"></i></span>
-                                            </div>
-                                            <input type="text" class="form-control" id="linkedin" name="linkedin" value="<?= $config['linkedin'] ?? '' ?>" placeholder="URL do LinkedIn">
-                                        </div>
-                                    </div>
-                                    
-                                    <div class="form-group">
-                                        <label for="whatsapp">WhatsApp</label>
-                                        <div class="input-group">
-                                            <div class="input-group-prepend">
-                                                <span class="input-group-text"><i class="fab fa-whatsapp"></i></span>
-                                            </div>
-                                            <input type="text" class="form-control" id="whatsapp" name="whatsapp" value="<?= $config['whatsapp'] ?? '' ?>" placeholder="Número com DDD">
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div class="mt-4">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="fas fa-save mr-1"></i> Salvar Configurações
-                                </button>
-                                <a href="admin-dashboard.php" class="btn btn-secondary ml-2">
-                                    <i class="fas fa-arrow-left mr-1"></i> Voltar
-                                </a>
-                            </div>
-                        </form>
+                    
+                    <div class="form-group">
+                        <label for="subtitulo_hero">Subtítulo do Hero</label>
+                        <textarea class="form-control" id="subtitulo_hero" name="subtitulo_hero" rows="2"><?= $config['subtitulo_hero'] ?? '' ?></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imagem_hero">Imagem do Hero</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="imagem_hero" name="imagem_hero">
+                            <label class="custom-file-label" for="imagem_hero">Escolher arquivo</label>
+                        </div>
+                        <?php if (!empty($config['imagem_hero'])): ?>
+                        <div class="mt-2">
+                            <img src="uploads/<?= $config['imagem_hero'] ?>" alt="Imagem Hero" class="img-thumbnail" style="max-height: 100px;">
+                        </div>
+                        <?php endif; ?>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="imagem_sobre">Imagem da Seção Sobre</label>
+                        <div class="custom-file">
+                            <input type="file" class="custom-file-input" id="imagem_sobre" name="imagem_sobre">
+                            <label class="custom-file-label" for="imagem_sobre">Escolher arquivo</label>
+                        </div>
+                        <?php if (!empty($config['imagem_sobre'])): ?>
+                        <div class="mt-2">
+                            <img src="uploads/<?= $config['imagem_sobre'] ?>" alt="Imagem Sobre" class="img-thumbnail" style="max-height: 100px;">
+                        </div>
+                        <?php endif; ?>
                     </div>
                 </div>
             </div>
             
-            <!-- Footer -->
-            <?php include 'views/admin/includes/footer.php'; ?>
-        </div>
+            <div class="row mt-4">
+                <div class="col-md-12">
+                    <h5 class="mb-3">Redes Sociais</h5>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="facebook">Facebook</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fab fa-facebook"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="facebook" name="facebook" value="<?= $config['facebook'] ?? '' ?>" placeholder="URL do Facebook">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="instagram">Instagram</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fab fa-instagram"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="instagram" name="instagram" value="<?= $config['instagram'] ?? '' ?>" placeholder="URL do Instagram">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="linkedin">LinkedIn</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fab fa-linkedin"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="linkedin" name="linkedin" value="<?= $config['linkedin'] ?? '' ?>" placeholder="URL do LinkedIn">
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="whatsapp">WhatsApp</label>
+                        <div class="input-group">
+                            <div class="input-group-prepend">
+                                <span class="input-group-text"><i class="fab fa-whatsapp"></i></span>
+                            </div>
+                            <input type="text" class="form-control" id="whatsapp" name="whatsapp" value="<?= $config['whatsapp'] ?? '' ?>" placeholder="Número com DDD">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="mt-4">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-save mr-1"></i> Salvar Configurações
+                </button>
+                <a href="admin-dashboard.php" class="btn btn-secondary ml-2">
+                    <i class="fas fa-arrow-left mr-1"></i> Voltar
+                </a>
+            </div>
+        </form>
     </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+    // Atualizar nome do arquivo selecionado no input file
+    $('.custom-file-input').on('change', function() {
+        let fileName = $(this).val().split('\\').pop();
+        $(this).next('.custom-file-label').addClass("selected").html(fileName || "Escolher arquivo");
+    });
     
-    <!-- JavaScript -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/admin.js"></script>
+    // Máscara para telefone
+    $('#telefone').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length <= 10) {
+            value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        } else {
+            value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        $(this).val(value);
+    });
     
-    <script>
-        // Atualizar nome do arquivo selecionado no input file
-        $('.custom-file-input').on('change', function() {
-            let fileName = $(this).val().split('\\').pop();
-            $(this).next('.custom-file-label').addClass("selected").html(fileName || "Escolher arquivo");
-        });
-        
-        // Máscara para telefone
-        $('#telefone').on('input', function() {
-            let value = $(this).val().replace(/\D/g, '');
-            if (value.length <= 10) {
-                value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-            } else {
-                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            }
-            $(this).val(value);
-        });
-        
-        // Máscara para WhatsApp
-        $('#whatsapp').on('input', function() {
-            let value = $(this).val().replace(/\D/g, '');
-            if (value.length <= 10) {
-                value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-            } else {
-                value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-            }
-            $(this).val(value);
-        });
-    </script>
-</body>
-</html>
+    // Máscara para WhatsApp
+    $('#whatsapp').on('input', function() {
+        let value = $(this).val().replace(/\D/g, '');
+        if (value.length <= 10) {
+            value = value.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
+        } else {
+            value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
+        }
+        $(this).val(value);
+    });
+</script>
+
+<?php include 'views/admin/includes/footer.php'; ?>
