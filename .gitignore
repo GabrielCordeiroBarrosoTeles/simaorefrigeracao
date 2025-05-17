@@ -1,27 +1,33 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+# Arquivos de ambiente
+.env
 
-# dependencies
-/node_modules
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
 
-# next.js
-/.next/
-/out/
+# Diretórios de dependências
+/vendor/
+/node_modules/
 
-# production
-/build
+# Diretórios de uploads
+/public/uploads/*
+!/public/uploads/.gitkeep
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
+# Arquivos de log
+/logs/*
+!/logs/.gitkeep
 
-# env files
-.env*
+# Arquivos de cache
+/cache/*
+!/cache/.gitkeep
 
-# vercel
-.vercel
+# Arquivos de configuração específicos do IDE
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
 
-# typescript
-*.tsbuildinfo
-next-env.d.ts
+# Arquivos temporários
+*.tmp
+*.bak
+*.swp
