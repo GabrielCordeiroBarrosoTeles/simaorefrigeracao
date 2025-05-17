@@ -101,7 +101,7 @@ function format_money($value) {
 }
 
 // Truncar texto
-function truncate($text, $length = 100, $append = '...') {
+function truncate_text($text, $length = 100, $append = '...') {
     if (strlen($text) <= $length) {
         return $text;
     }

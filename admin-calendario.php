@@ -405,6 +405,11 @@ include 'views/admin/includes/header.php';
                 $('#novoAgendamentoModal').modal('show');
             },
             eventContent: function(arg) {
+                // Se for um evento de contagem, não renderizar conteúdo
+                if (arg.event.display === 'background') {
+                    return;
+                }
+                
                 let timeText = arg.timeText;
                 let title = arg.event.title;
                 let status = arg.event.extendedProps.status || 'pendente';
@@ -446,12 +451,26 @@ include 'views/admin/includes/header.php';
                 return { domNodes: arrayOfDomNodes };
             },
             eventDidMount: function(info) {
-                $(info.el).tooltip({
-                    title: info.event.title + ' - ' + info.event.extendedProps.cliente,
-                    placement: 'top',
-                    trigger: 'hover',
-                    container: 'body'
-                });
+                // Adicionar tooltip apenas para eventos regulares
+                if (info.event.display !== 'background') {
+                    $(info.el).tooltip({
+                        title: info.event.title + ' - ' + info.event.extendedProps.cliente,
+                        placement: 'top',
+                        trigger: 'hover',
+                        container: 'body'
+                    });
+                }
+                
+                // Adicionar contagem de agendamentos ao dia
+                if (info.event.display === 'background' && info.event.extendedProps.count) {
+                    const dayEl = info.el.closest('.fc-daygrid-day');
+                    if (dayEl) {
+                        const eventsEl = dayEl.querySelector('.fc-daygrid-day-events');
+                        if (eventsEl) {
+                            eventsEl.setAttribute('data-count', info.event.extendedProps.count);
+                        }
+                    }
+                }
             }
         });
         calendar.render();
@@ -624,6 +643,38 @@ include 'views/admin/includes/header.php';
         display: inline-block;
     }
     
+    /* Estilo para contagem de agendamentos */
+    .event-count {
+        position: relative;
+    }
+    
+    .fc-daygrid-day-number {
+        position: relative;
+        z-index: 4;
+    }
+    
+    .fc-daygrid-day-events {
+        position: relative;
+    }
+    
+    .fc-daygrid-day-events::after {
+        content: attr(data-count);
+        position: absolute;
+        top: 0;
+        right: 5px;
+        background-color: #4e73df;
+        color: white;
+        border-radius: 50%;
+        width: 20px;
+        height: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 10px;
+        font-weight: bold;
+        z-index: 3;
+    }
+    
     /* Estilos para o modal de finalização */
     .tecnicos-container {
         max-height: 150px;
@@ -649,6 +700,23 @@ include 'views/admin/includes/header.php';
         
         .fc-event-time, .fc-event-cliente, .fc-event-status {
             display: none;
+        }
+        
+        /* Ajustes para navbar responsivo */
+        .admin-sidebar {
+            width: 100%;
+            transform: translateX(-100%);
+            transition: transform 0.3s ease;
+            z-index: 1050;
+        }
+        
+        .admin-sidebar.show {
+            transform: translateX(0);
+        }
+        
+        .admin-content {
+            margin-left: 0;
+            width: 100%;
         }
     }
 </style>

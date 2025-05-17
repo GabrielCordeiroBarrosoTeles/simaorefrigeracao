@@ -1,4 +1,4 @@
-<div class="sidebar">
+<div class="sidebar" id="sidebar">
     <div class="sidebar-header">
         <a href="admin-dashboard.php" class="sidebar-brand">
             <i class="fas fa-snowflake text-primary"></i>
@@ -97,7 +97,7 @@
             </li>
             
             <li class="nav-item mt-3">
-                <a class="nav-link text-danger" href="logout.php">
+                <a class="nav-link text-danger" href="logout.php" id="btnLogout">
                     <i class="fas fa-sign-out-alt"></i>
                     <span>Sair</span>
                 </a>

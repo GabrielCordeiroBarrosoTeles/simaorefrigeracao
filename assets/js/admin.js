@@ -1,4 +1,5 @@
-import { Chart } from "@/components/ui/chart"
+// Removendo import desnecessário que pode causar erros
+// import { Chart } from "@/components/ui/chart"
 // Função para inicializar o DataTables
 function initDataTable() {
   if ($.fn.DataTable) {
@@ -45,13 +46,38 @@ function initMasks() {
 
 // Função para inicializar o sidebar toggle
 function initSidebar() {
-  $("#sidebarToggle, #sidebarToggleTop").on("click", (e) => {
-    $("body").toggleClass("sidebar-toggled")
-    $(".sidebar").toggleClass("toggled")
-    if ($(".sidebar").hasClass("toggled")) {
-      $(".sidebar .collapse").collapse("hide")
+  $("#sidebarToggle, #sidebarToggleTop").on("click", function(e) {
+    e.preventDefault();
+    $("body").toggleClass("sidebar-toggled");
+    $("#sidebar").toggleClass("toggled");
+    if ($("#sidebar").hasClass("toggled")) {
+      $("#sidebar .collapse").collapse("hide");
     }
-  })
+  });
+  
+  // Garantir que o toggle do sidebar funcione corretamente em dispositivos móveis
+  $(window).resize(function() {
+    if ($(window).width() < 768) {
+      $("#sidebar").addClass("toggled");
+    } else if ($(window).width() >= 992) {
+      $("#sidebar").removeClass("toggled");
+    }
+  });
+  
+  // Fechar sidebar ao clicar fora em dispositivos móveis
+  $(document).on("click", function(e) {
+    if ($(window).width() < 768) {
+      if (!$(e.target).closest("#sidebar").length && 
+          !$(e.target).closest("#sidebarToggle").length && 
+          !$(e.target).closest("#sidebarToggleTop").length) {
+        $("#sidebar").addClass("toggled");
+        $("body").removeClass("sidebar-toggled");
+      }
+    }
+  });
+  
+  // Trigger inicial para configurar corretamente o sidebar
+  $(window).trigger("resize");
 }
 
 // Função para inicializar tooltips

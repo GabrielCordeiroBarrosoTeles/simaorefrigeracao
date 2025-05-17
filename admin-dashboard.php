@@ -20,6 +20,16 @@ $stats = [
    'contatos_novos' => countContatosNovos($db)
 ];
 
+// Função para contar agendamentos por status
+function countAgendamentosPorStatus($db, $status) {
+   $query = "SELECT COUNT(*) as total FROM agendamentos WHERE status = :status";
+   $stmt = $db->prepare($query);
+   $stmt->bindParam(':status', $status);
+   $stmt->execute();
+   $result = $stmt->fetch(PDO::FETCH_ASSOC);
+   return $result['total'] ?? 0;
+}
+
 // Agendamentos recentes
 $agendamentos_recentes = getAgendamentosRecentes($db);
 
@@ -109,7 +119,7 @@ include 'views/admin/includes/header.php';
 
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="h3 mb-0 text-gray-800">Dashboard</h1>
-        <a href="gerar-relatorio.php" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm">
+        <a href="gerar-pdf.php?tipo=relatorio&periodo=mensal" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" id="btnGerarRelatorio">
             <i class="fas fa-download fa-sm text-white-50"></i> Gerar Relatório
         </a>
     </div>
@@ -242,50 +252,52 @@ include 'views/admin/includes/header.php';
                     <h6 class="m-0 font-weight-bold text-primary">Agendamentos Recentes</h6>
                 </div>
                 <div class="card-body p-0">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Cliente</th>
-                                <th>Serviço</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($agendamentos_recentes)): ?>
-                            <tr>
-                                <td colspan="4" class="text-center">Nenhum agendamento encontrado.</td>
-                            </tr>
-                            <?php else: ?>
-                                <?php foreach ($agendamentos_recentes as $agendamento): ?>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
                                 <tr>
-                                    <td><?= date('d/m/Y', strtotime($agendamento['data_agendamento'])) ?></td>
-                                    <td><?= $agendamento['cliente_nome'] ?></td>
-                                    <td><?= $agendamento['servico_nome'] ?></td>
-                                    <td>
-                                        <?php
-                                        $status_class = 'secondary';
-                                        switch ($agendamento['status']) {
-                                            case 'pendente':
-                                                $status_class = 'warning';
-                                                break;
-                                            case 'concluido':
-                                                $status_class = 'success';
-                                                break;
-                                            case 'cancelado':
-                                                $status_class = 'danger';
-                                                break;
-                                        }
-                                        ?>
-                                        <span class="badge badge-<?= $status_class ?>">
-                                            <?= ucfirst($agendamento['status']) ?>
-                                        </span>
-                                    </td>
+                                    <th>Data</th>
+                                    <th>Cliente</th>
+                                    <th>Serviço</th>
+                                    <th>Status</th>
                                 </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($agendamentos_recentes)): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center">Nenhum agendamento encontrado.</td>
+                                </tr>
+                                <?php else: ?>
+                                    <?php foreach ($agendamentos_recentes as $agendamento): ?>
+                                    <tr>
+                                        <td><?= date('d/m/Y', strtotime($agendamento['data_agendamento'])) ?></td>
+                                        <td><?= $agendamento['cliente_nome'] ?></td>
+                                        <td><?= $agendamento['servico_nome'] ?></td>
+                                        <td>
+                                            <?php
+                                            $status_class = 'secondary';
+                                            switch ($agendamento['status']) {
+                                                case 'pendente':
+                                                    $status_class = 'warning';
+                                                    break;
+                                                case 'concluido':
+                                                    $status_class = 'success';
+                                                    break;
+                                                case 'cancelado':
+                                                    $status_class = 'danger';
+                                                    break;
+                                            }
+                                            ?>
+                                            <span class="badge badge-<?= $status_class ?>">
+                                                <?= ucfirst($agendamento['status']) ?>
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -296,32 +308,34 @@ include 'views/admin/includes/header.php';
                     <h6 class="m-0 font-weight-bold text-primary">Próximos Agendamentos</h6>
                 </div>
                 <div class="card-body p-0">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Cliente</th>
-                                <th>Serviço</th>
-                                <th>Técnico</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($proximos_agendamentos)): ?>
-                            <tr>
-                                <td colspan="4" class="text-center">Nenhum agendamento futuro.</td>
-                            </tr>
-                            <?php else: ?>
-                                <?php foreach ($proximos_agendamentos as $agendamento): ?>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
                                 <tr>
-                                    <td><?= date('d/m/Y', strtotime($agendamento['data_agendamento'])) ?></td>
-                                    <td><?= $agendamento['cliente_nome'] ?></td>
-                                    <td><?= $agendamento['servico_nome'] ?></td>
-                                    <td><?= $agendamento['tecnico_nome'] ?></td>
+                                    <th>Data</th>
+                                    <th>Cliente</th>
+                                    <th>Serviço</th>
+                                    <th>Técnico</th>
                                 </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($proximos_agendamentos)): ?>
+                                <tr>
+                                    <td colspan="4" class="text-center">Nenhum agendamento futuro.</td>
+                                </tr>
+                                <?php else: ?>
+                                    <?php foreach ($proximos_agendamentos as $agendamento): ?>
+                                    <tr>
+                                        <td><?= date('d/m/Y', strtotime($agendamento['data_agendamento'])) ?></td>
+                                        <td><?= $agendamento['cliente_nome'] ?></td>
+                                        <td><?= $agendamento['servico_nome'] ?></td>
+                                        <td><?= $agendamento['tecnico_nome'] ?></td>
+                                    </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
                 <div class="card-footer text-center">
                     <a href="admin-table.php?table=agendamentos" class="btn btn-primary">Ver Todos</a>
@@ -345,9 +359,9 @@ document.addEventListener('DOMContentLoaded', function() {
            labels: ['Pendentes', 'Concluídos', 'Cancelados'],
            datasets: [{
                data: [
-                   <?= $stats['agendamentos_pendentes'] ?? 5 ?>, 
-                   <?= $stats['agendamentos_concluidos'] ?? 8 ?>, 
-                   <?= $stats['agendamentos_cancelados'] ?? 2 ?>
+                   <?= countAgendamentosPorStatus($db, 'pendente') ?>, 
+                   <?= countAgendamentosPorStatus($db, 'concluido') ?>, 
+                   <?= countAgendamentosPorStatus($db, 'cancelado') ?>
                ],
                backgroundColor: ['#f6c23e', '#1cc88a', '#e74a3b'],
                hoverBackgroundColor: ['#e0a800', '#169b6b', '#d52a1a'],
@@ -366,15 +380,38 @@ document.addEventListener('DOMContentLoaded', function() {
        }
    });
    
-   // Agendamentos por Técnico (dados de exemplo)
+   // Agendamentos por Técnico (dados reais do banco)
    var tecnicosCtx = document.getElementById('tecnicosChart').getContext('2d');
    var tecnicosChart = new Chart(tecnicosCtx, {
        type: 'bar',
        data: {
-           labels: ['João Silva', 'Maria Oliveira', 'Pedro Santos', 'Ana Costa'],
+           labels: [
+               <?php
+               // Buscar dados reais de técnicos e seus agendamentos
+               $query = "SELECT t.nome, COUNT(a.id) as total 
+                        FROM tecnicos t 
+                        LEFT JOIN agendamentos a ON t.id = a.tecnico_id 
+                        GROUP BY t.id 
+                        ORDER BY total DESC 
+                        LIMIT 5";
+               $stmt = $db->prepare($query);
+               $stmt->execute();
+               $tecnicos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+               
+               $nomes = [];
+               $totais = [];
+               
+               foreach ($tecnicos as $tecnico) {
+                   $nomes[] = "'" . addslashes($tecnico['nome']) . "'";
+                   $totais[] = $tecnico['total'];
+               }
+               
+               echo implode(', ', $nomes);
+               ?>
+           ],
            datasets: [{
                label: 'Agendamentos',
-               data: [12, 8, 15, 6],
+               data: [<?= implode(', ', $totais) ?>],
                backgroundColor: '#36b9cc',
                borderWidth: 0
            }]
@@ -404,7 +441,7 @@ document.addEventListener('DOMContentLoaded', function() {
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Botão de gerar relatório
-    const btnRelatorio = document.querySelector('a[href="gerar-relatorio.php"]');
+    const btnRelatorio = document.getElementById('btnGerarRelatorio');
     if (btnRelatorio) {
         btnRelatorio.addEventListener('click', function(e) {
             e.preventDefault();
@@ -417,15 +454,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 $('#loadingModal').modal('hide');
                 
                 // Redirecionar para o relatório ou fazer download
-                window.location.href = 'gerar-pdf.php?tipo=relatorio&periodo=mensal';
+                window.location.href = btnRelatorio.getAttribute('href');
             }, 1500);
+        });
+    }
+    
+    // Garantir que o botão de logout funcione corretamente
+    const btnLogout = document.getElementById('btnLogout');
+    if (btnLogout) {
+        btnLogout.addEventListener('click', function(e) {
+            // Não previne o comportamento padrão para permitir a navegação normal
+            console.log('Logout iniciado');
         });
     }
 });
 </script>
 
 <!-- Modal de Carregamento -->
-<div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
+<div class="modal fade" id="loadingModal" tabindex="-1" role="dialog" aria-hidden="true" data-backdrop="static" data-keyboard="false">
     <div class="modal-dialog modal-dialog-centered" role="document">
         <div class="modal-content">
             <div class="modal-body text-center p-4">

@@ -89,7 +89,7 @@ if ($tecnico && table_exists($db, 'agendamentos')) {
 }
 
 // Função para truncar texto
-function truncate($text, $length) {
+function truncate_tecnico($text, $length) {
     if (strlen($text) <= $length) {
         return $text;
     }

@@ -46,6 +46,9 @@ function getAgendamentos() {
     $servico_id = isset($_GET['servico_id']) ? (int)$_GET['servico_id'] : null;
     $status = isset($_GET['status']) ? $_GET['status'] : null;
     
+    // Adicionar contagem de agendamentos por dia para exibir no calendário
+    $count_by_date = [];
+    
     try {
         // Construir consulta SQL
         $sql = "SELECT a.id, a.titulo, a.data_agendamento, a.hora_inicio, a.hora_fim, 
@@ -99,6 +102,16 @@ function getAgendamentos() {
         // Obter resultados
         $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
+        // Contar agendamentos por data
+        $count_by_date = [];
+        foreach ($agendamentos as $agendamento) {
+            $date = $agendamento['data_agendamento'];
+            if (!isset($count_by_date[$date])) {
+                $count_by_date[$date] = 0;
+            }
+            $count_by_date[$date]++;
+        }
+        
         // Formatar para o FullCalendar
         $events = [];
         foreach ($agendamentos as $agendamento) {
@@ -144,6 +157,21 @@ function getAgendamentos() {
                     'tecnico_id' => $agendamento['tecnico_id'],
                     'status' => $agendamento['status'],
                     'observacoes' => $agendamento['observacoes']
+                ]
+            ];
+        }
+        
+        // Adicionar eventos para mostrar contagem de agendamentos por dia
+        foreach ($count_by_date as $date => $count) {
+            $events[] = [
+                'id' => 'count_' . $date,
+                'title' => $count . ' agendamento(s)',
+                'start' => $date,
+                'display' => 'background',
+                'backgroundColor' => 'rgba(0,0,0,0.05)',
+                'classNames' => ['event-count'],
+                'extendedProps' => [
+                    'count' => $count
                 ]
             ];
         }

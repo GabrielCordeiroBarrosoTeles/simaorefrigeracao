@@ -260,6 +260,8 @@ include 'views/admin/includes/header.php';
                 </a>
             </div>
 
+            <!-- Removendo título duplicado -->
+
             <?php display_flash_message(); ?>
 
             <!-- Form Card -->
