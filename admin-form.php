@@ -152,8 +152,7 @@ include 'views/admin/includes/header.php';
     <!-- Main Content -->
     <div id="content">
 
-        <!-- Topbar -->
-        <?php include 'views/admin/includes/topbar.php'; ?>
+        
 
         <!-- Begin Page Content -->
         <div class="container-fluid">

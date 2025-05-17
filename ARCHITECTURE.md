@@ -1,151 +1,70 @@
-# Arquitetura do Sistema FrioCerto
+# Arquitetura do Sistema Simão Refrigeração
 
 ## Visão Geral
-
-O sistema FrioCerto é uma aplicação web para gerenciamento de serviços de refrigeração, incluindo agendamentos, clientes, técnicos e serviços. A arquitetura segue o padrão MVC (Model-View-Controller) para melhor organização e manutenção do código.
+O sistema Simão Refrigeração é uma aplicação web PHP para gerenciamento de serviços de manutenção de ar-condicionado, com três áreas principais:
+- **Área Pública**: Landing page para visitantes
+- **Área Administrativa**: Gerenciamento completo do sistema
+- **Área do Técnico**: Acesso restrito para técnicos visualizarem e atualizarem seus agendamentos
 
 ## Estrutura de Diretórios
 
-\`\`\`
+```
 simaorefrigeracao/
-├── admin/                  # Arquivos administrativos
-│   ├── dashboard.php       # Painel principal
-│   ├── login.php           # Login administrativo
-│   ├── table.php           # Gerenciamento de tabelas
-│   ├── form.php            # Formulários genéricos
-│   └── ...                 # Outros arquivos administrativos
-│
 ├── app/                    # Núcleo da aplicação
-│   ├── layout.tsx          # Layout principal (Next.js)
-│   └── page.tsx            # Página inicial (Next.js)
-│
-├── assets/                 # Recursos estáticos (legado)
-│   ├── css/                # Arquivos CSS
-│   ├── js/                 # Arquivos JavaScript
-│   └── img/                # Imagens
-│
-├── config/                 # Configurações
-│   ├── config.php          # Configurações gerais
-│   └── database.php        # Configuração do banco de dados
-│
-├── controllers/            # Controladores
-│   ├── Admin/              # Controladores administrativos
-│   │   ├── DashboardController.php
-│   │   ├── ServicosController.php
-│   │   └── ...
-│   ├── HomeController.php
-│   ├── ContatoController.php
-│   └── ...
-│
-├── helpers/                # Funções auxiliares
-│   └── functions.php       # Funções globais
-│
-├── includes/               # Arquivos incluídos
-│   ├── header.php
-│   └── footer.php
-│
-├── models/                 # Modelos de dados
-│   ├── Cliente.php
-│   ├── Servico.php
-│   └── ...
-│
-├── public/                 # Arquivos públicos (nova estrutura)
-│   ├── css/                # Estilos
-│   ├── js/                 # Scripts
-│   └── img/                # Imagens
-│
-├── tests/                  # Testes
-│   ├── test_login.php
-│   └── ...
-│
-├── tools/                  # Ferramentas e utilitários
-│   ├── debug.php
-│   ├── setup_database.php
-│   └── ...
-│
-├── uploads/                # Arquivos enviados
-│
-├── views/                  # Visualizações
-│   ├── admin/              # Visualizações administrativas
-│   │   ├── dashboard.php
-│   │   ├── includes/       # Componentes reutilizáveis
-│   │   │   ├── header.php
-│   │   │   ├── footer.php
-│   │   │   └── sidebar.php
-│   │   └── ...
-│   ├── home.php
-│   ├── contato.php
-│   └── ...
-│
-├── .htaccess               # Configurações do Apache
-├── bootstrap.php           # Inicialização do sistema
-├── index.php               # Ponto de entrada principal
-└── README.md               # Documentação
-\`\`\`
+│   ├── config/             # Configurações do sistema
+│   ├── controllers/        # Controladores
+│   ├── models/             # Modelos de dados
+│   ├── helpers/            # Funções auxiliares
+│   └── core/               # Classes principais do sistema
+├── public/                 # Ponto de entrada da aplicação
+│   ├── index.php           # Front controller
+│   ├── assets/             # Recursos estáticos
+│   │   ├── css/            # Folhas de estilo
+│   │   ├── js/             # Scripts JavaScript
+│   │   ├── images/         # Imagens
+│   │   └── fonts/          # Fontes
+│   └── uploads/            # Arquivos enviados pelos usuários
+├── views/                  # Templates e views
+│   ├── admin/              # Views da área administrativa
+│   ├── tecnico/            # Views da área do técnico
+│   ├── public/             # Views da área pública
+│   └── shared/             # Componentes compartilhados
+└── vendor/                 # Dependências externas (opcional)
+```
 
-## Padrões de Código
+## Padrão MVC
+O sistema segue o padrão Model-View-Controller (MVC):
+- **Models**: Responsáveis pela lógica de negócios e acesso ao banco de dados
+- **Views**: Responsáveis pela apresentação dos dados
+- **Controllers**: Responsáveis por receber requisições, processar dados e retornar respostas
 
-1. **Nomenclatura**:
-   - Classes: PascalCase (ex: ClienteController)
-   - Métodos e funções: camelCase (ex: getClientes)
-   - Variáveis: snake_case (ex: $nome_cliente)
-   - Constantes: UPPER_CASE (ex: MAX_FILE_SIZE)
+## Fluxo de Requisição
+1. Todas as requisições são direcionadas para o `public/index.php`
+2. O sistema de rotas identifica o controlador e a ação correspondentes
+3. O controlador processa a requisição, interage com os modelos e renderiza a view apropriada
+4. A resposta é enviada ao cliente
 
-2. **Organização de Arquivos**:
-   - Um arquivo por classe
-   - Nome do arquivo igual ao nome da classe
-   - Arquivos de visualização com nomes descritivos
-
-3. **Segurança**:
-   - Validação de entrada de dados
-   - Prevenção de SQL Injection usando prepared statements
-   - Autenticação e autorização adequadas
-
-## Fluxo de Dados
-
-1. O usuário acessa uma URL
-2. O index.php roteia a solicitação para o controlador apropriado
-3. O controlador processa a solicitação, interage com os modelos
-4. Os modelos acessam o banco de dados
-5. O controlador passa os dados para a visualização
-6. A visualização renderiza o HTML final
-7. A resposta é enviada ao usuário
+## Autenticação e Autorização
+- Sistema de login baseado em sessões PHP
+- Níveis de acesso: admin, editor, tecnico, tecnico_adm
+- Middleware de autenticação para proteger rotas restritas
 
 ## Banco de Dados
+- MySQL/MariaDB com tabelas relacionais
+- Conexão via PDO para segurança e flexibilidade
+- Principais entidades: Usuários, Clientes, Técnicos, Serviços, Agendamentos
 
-O sistema utiliza MySQL/MariaDB com as seguintes tabelas principais:
+## Convenções de Código
+- PSR-4 para autoloading de classes
+- PSR-12 para estilo de código
+- Nomes de classes em PascalCase
+- Nomes de métodos e variáveis em camelCase
+- Constantes em UPPER_SNAKE_CASE
+- Indentação com 4 espaços
 
-- clientes
-- tecnicos
-- servicos
-- agendamentos
-- usuarios
-- contatos
-- depoimentos
-- configuracoes
-
-## Autenticação
-
-O sistema utiliza autenticação baseada em sessão com os seguintes recursos:
-
-- Login com nome de usuário e senha
-- Níveis de acesso (admin, técnico)
-- Proteção contra força bruta
-- Tempo limite de sessão
-
-## Manutenção e Desenvolvimento
-
-Para adicionar novos recursos:
-
-1. Crie/modifique os modelos necessários
-2. Implemente a lógica nos controladores
-3. Crie/atualize as visualizações
-4. Atualize as rotas no index.php
-5. Teste exaustivamente
-
-## Considerações de Segurança
-
-- Mantenha as bibliotecas atualizadas
-- Use HTTPS em produção
-- Implemente validação de entrada em todos os formulários
-- Siga as melhores práticas de segurança web
+## Segurança
+- Proteção contra SQL Injection via prepared statements
+- Proteção contra CSRF com tokens
+- Senhas armazenadas com hash seguro (bcrypt)
+- Validação de entrada de dados
+- Sanitização de saída de dados
