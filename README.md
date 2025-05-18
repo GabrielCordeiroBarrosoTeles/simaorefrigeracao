@@ -61,15 +61,14 @@ simaorefrigeracao/
 
 ## Configuração do Site
 
-Após clonar e instalar dependências, configure as variáveis de ambiente em `.env`. Exemplo de variáveis:
+Na área administrativa, você pode editar as informações gerais do site diretamente pelo painel de configurações. Nesta seção, é possível alterar:
 
-```dotenv
-APP_URL=http://localhost
-DB_HOST=127.0.0.1
-DB_DATABASE=simao_db
-DB_USERNAME=root
-DB_PASSWORD=
-```
+* Nome da empresa
+* Descrição e texto do Hero
+* Contato (telefone e email)
+* Endereço
+* Links das redes sociais (Facebook, Instagram, LinkedIn, WhatsApp)
+* Imagens principais (Hero, seção Sobre, etc.)
 
 <!-- Config Site Image -->
 
