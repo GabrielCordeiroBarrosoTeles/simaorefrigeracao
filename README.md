@@ -31,7 +31,7 @@ simaorefrigeracao/
 │   └── core/               # Classes e base do framework interno
 ├── public/                 # Ponto de entrada e recursos públicos
 │   ├── index.php           # Front controller
-│   ├── .htaccess           # Regras de URL e segurança
+   │   ├── .htaccess           # Regras de URL e segurança
 │   ├── assets/             # Recursos estáticos
 │   │   ├── css/            # Folhas de estilo
 │   │   ├── js/             # Scripts JavaScript
@@ -59,6 +59,24 @@ simaorefrigeracao/
 
 ---
 
+## Configuração do Site
+
+Após clonar e instalar dependências, configure as variáveis de ambiente em `.env`. Exemplo de variáveis:
+
+```dotenv
+APP_URL=http://localhost
+DB_HOST=127.0.0.1
+DB_DATABASE=simao_db
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+<!-- Config Site Image -->
+
+![Configuração do Site](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/configSite.png)
+
+---
+
 ## Padrão MVC
 
 O sistema segue o padrão **Model-View-Controller (MVC)**:
@@ -81,6 +99,50 @@ All requests passam pelo front controller (`public/index.php`) e são roteados c
 
 ---
 
+## Área Administrativa
+
+Painel de controle para administradores com dashboards, gestão de usuários, clientes e técnicos.
+
+<!-- Dashboard Admin Image -->
+
+![Dashboard Admin](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/dashboardAdmin.png)
+
+### Login
+
+Formulário de autenticação para acesso à área restrita.
+
+<!-- Login Image -->
+
+![Login](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/login.png)
+
+### Tabelas de Dados
+
+* **Clientes**
+
+  <!-- Table Client Image -->
+
+  ![Clientes](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableClient.png)
+
+* **Perfis (Usuários)**
+
+  <!-- Table Profile Image -->
+
+  ![Perfis](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableProfile.png)
+
+* **Técnicos**
+
+  <!-- Table Technical Image -->
+
+  ![Técnicos](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableTechnical.png)
+
+* **Usuários**
+
+  <!-- Table Users Image -->
+
+  ![Usuários](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableUsers.png)
+
+---
+
 ## Requisitos
 
 * PHP 7.4 ou superior
@@ -97,7 +159,7 @@ All requests passam pelo front controller (`public/index.php`) e são roteados c
    ```bash
    git clone https://github.com/GabrielCordeiroBarrosoTeles/simaorefrigeracao.git
    ```
-2. Instale dependências (se houver `composer.json`):
+2. Instale dependências:
 
    ```bash
    cd simaorefrigeracao
