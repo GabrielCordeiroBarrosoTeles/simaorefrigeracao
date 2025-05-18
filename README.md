@@ -19,19 +19,19 @@ O **Simão Refrigeração** é uma aplicação web em PHP para gerenciamento de 
 ```
 simaorefrigeracao/
 ├── app/                    # Núcleo da aplicação
-│   ├── config/             # Configurações do sistema
-│   │   ├── config.php      # Configurações gerais
-│   │   └── database.php    # Configuração do banco de dados
 │   ├── controllers/        # Controladores (MVC)
 │   │   ├── Admin/          # Controladores da área administrativa
 │   │   └── Tecnico/        # Controladores da área do técnico
 │   ├── models/             # Modelos de dados (entidades)
 │   ├── helpers/            # Funções auxiliares
 │   │   └── functions.php   # Funções globais
-│   └── core/               # Classes e base do framework interno
+│   ├── core/               # Classes e base do framework interno
+│   └── config/             # Configurações do sistema
+│       ├── config.php      # Configurações gerais
+│       └── database.php    # Configuração do banco de dados
 ├── public/                 # Ponto de entrada e recursos públicos
 │   ├── index.php           # Front controller
-   │   ├── .htaccess           # Regras de URL e segurança
+│   ├── .htaccess           # Regras de URL e segurança
 │   ├── assets/             # Recursos estáticos
 │   │   ├── css/            # Folhas de estilo
 │   │   ├── js/             # Scripts JavaScript
@@ -56,6 +56,52 @@ simaorefrigeracao/
 ├── .gitignore              # Arquivos e pastas ignorados pelo Git
 └── README.md               # Documentação do projeto
 ```
+
+---
+
+## Login
+
+Formulário de autenticação para acesso à área restrita.
+
+<!-- Login Image -->
+
+![Login](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/login.png)
+
+---
+
+## Área Administrativa
+
+Painel de controle para administradores com dashboards, gestão de usuários, clientes e técnicos.
+
+<!-- Dashboard Admin Image -->
+
+![Dashboard Admin](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/dashboardAdmin.png)
+
+### Tabelas de Dados
+
+* **Clientes**
+
+  <!-- Table Client Image -->
+
+  ![Clientes](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableClient.png)
+
+* **Perfis (Usuários)**
+
+  <!-- Table Profile Image -->
+
+  ![Perfis](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableProfile.png)
+
+* **Técnicos**
+
+  <!-- Table Technical Image -->
+
+  ![Técnicos](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableTechnical.png)
+
+* **Usuários**
+
+  <!-- Table Users Image -->
+
+  ![Usuários](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableUsers.png)
 
 ---
 
@@ -95,50 +141,6 @@ All requests passam pelo front controller (`public/index.php`) e são roteados c
 3. O sistema de rotas determina qual Controller e ação chamar.
 4. O Controller processa dados (chama Models, valida inputs, etc.) e escolhe uma View.
 5. A View é renderizada e a resposta é enviada ao cliente.
-
----
-
-## Área Administrativa
-
-Painel de controle para administradores com dashboards, gestão de usuários, clientes e técnicos.
-
-<!-- Dashboard Admin Image -->
-
-![Dashboard Admin](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/dashboardAdmin.png)
-
-### Login
-
-Formulário de autenticação para acesso à área restrita.
-
-<!-- Login Image -->
-
-![Login](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/login.png)
-
-### Tabelas de Dados
-
-* **Clientes**
-
-  <!-- Table Client Image -->
-
-  ![Clientes](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableClient.png)
-
-* **Perfis (Usuários)**
-
-  <!-- Table Profile Image -->
-
-  ![Perfis](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableProfile.png)
-
-* **Técnicos**
-
-  <!-- Table Technical Image -->
-
-  ![Técnicos](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableTechnical.png)
-
-* **Usuários**
-
-  <!-- Table Users Image -->
-
-  ![Usuários](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableUsers.png)
 
 ---
 
