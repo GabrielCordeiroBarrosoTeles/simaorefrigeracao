@@ -1,33 +1,44 @@
-# Arquivos de ambiente
-.env
-
-# Arquivos de sistema
-.DS_Store
-Thumbs.db
-
-# Diretórios de dependências
+# Dependências
 /vendor/
 /node_modules/
 
-# Diretórios de uploads
-/public/uploads/*
-!/public/uploads/.gitkeep
-
-# Arquivos de log
-/logs/*
-!/logs/.gitkeep
+# Arquivos de ambiente
+/.env
+/.env.local
+/.env.*.local
 
 # Arquivos de cache
-/cache/*
-!/cache/.gitkeep
+/var/cache/
+/var/log/
+/var/sessions/
+/.phpunit.result.cache
 
-# Arquivos de configuração específicos do IDE
-.idea/
-.vscode/
+# Arquivos de IDE
+/.idea/
+/.vscode/
 *.sublime-project
 *.sublime-workspace
+*.code-workspace
 
-# Arquivos temporários
-*.tmp
-*.bak
+# Arquivos do sistema operacional
+.DS_Store
+Thumbs.db
 *.swp
+*.swo
+
+# Arquivos de build
+/build/
+/dist/
+/public/build/
+
+# Arquivos de upload
+/public/uploads/
+
+# Arquivos de Docker
+/docker-compose.override.yml
+/docker/data/
+
+# Outros
+/phpunit.xml
+/coverage/
+/composer.phar

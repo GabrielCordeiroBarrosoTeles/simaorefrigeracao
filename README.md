@@ -1,235 +1,154 @@
 # Simão Refrigeração
 
-Sistema de gerenciamento para empresa de refrigeração e ar condicionado.
+Sistema de gerenciamento para empresa de refrigeração, utilizando Doctrine ORM para persistência de dados e programação orientada a objetos.
 
----
+## Arquitetura do Sistema
 
-## Visão Geral
+```mermaid
+flowchart TD
+    style E fill:#e06666, color:white
+    style S fill:#3d85c6, color:white
+    style D fill:#93c47d, color:white
+    style I fill:#f6b26b, color:white
+    style P fill:#8e7cc3, color:white
 
-O **Simão Refrigeração** é uma aplicação web em PHP para gerenciamento de serviços de manutenção de ar-condicionado e refrigeração, composta por três áreas principais:
+    %% Camadas da Arquitetura
+    D[Domain] --- DE[Entity]
+    D --- DR[Repository Interface]
+    D --- DS[Domain Service]
+    D --- DV[Value Object]
+    D --- DX[Exception]
 
-* **Área Pública**: Landing page para visitantes apresentarem-se à empresa.
-* **Área Administrativa**: Painel completo para gestão de clientes, técnicos, agendamentos e relatórios.
-* **Área do Técnico**: Interface restrita para técnicos visualizarem, atualizarem e finalizarem seus agendamentos.
+    A[Application] --- AU[Use Case]
+    A --- AS[Application Service]
+    A --- AV[Validator]
+    A --- AD[DTO]
 
----
+    I[Infrastructure] --- IP[Persistence]
+    I --- IC[Config]
+    I --- IH[Http]
+    I --- IM[Migrations]
+    
+    P[Presentation] --- PC[Controller]
+    P --- PV[View]
+    P --- PA[API]
 
-## Estrutura do Projeto
+    %% Fluxo de Dados
+    PC -->|usa| AU
+    AU -->|usa| DR
+    AU -->|usa| AS
+    AS -->|usa| DR
+    AS -->|valida| AV
+    AV -->|is invalid| DX
+    DR -->|implementado por| IP
+    IP -->|ORM| DB[Database]
 
+    %% Frontend
+    FE[Frontend] --> API[API Endpoints]
+    API -->|JSON Request| PA
+    PA -->|processa| PC
+    PC -->|retorna| PA
+    PA -->|JSON Response| API
 ```
-simaorefrigeracao/
-├── app/                    # Núcleo da aplicação
-│   ├── controllers/        # Controladores (MVC)
-│   │   ├── Admin/          # Controladores da área administrativa
-│   │   └── Tecnico/        # Controladores da área do técnico
-│   ├── models/             # Modelos de dados (entidades)
-│   ├── helpers/            # Funções auxiliares
-│   │   └── functions.php   # Funções globais
-│   ├── core/               # Classes e base do framework interno
-│   └── config/             # Configurações do sistema
-│       ├── config.php      # Configurações gerais
-│       └── database.php    # Configuração do banco de dados
-├── public/                 # Ponto de entrada e recursos públicos
-│   ├── index.php           # Front controller
-│   ├── .htaccess           # Regras de URL e segurança
-│   ├── assets/             # Recursos estáticos
-│   │   ├── css/            # Folhas de estilo
-│   │   ├── js/             # Scripts JavaScript
-│   │   ├── images/         # Imagens
-│   │   └── fonts/          # Fontes
-│   └── uploads/            # Arquivos enviados pelos usuários
-├── views/                  # Templates e visualizações
-│   ├── admin/              # Views da área administrativa
-│   ├── tecnico/            # Views da área do técnico
-│   ├── public/             # Views da área pública
-│   └── shared/             # Componentes compartilhados (header, footer, etc.)
-├── vendor/                 # Dependências externas (Composer)
-├── assets/                 # (Opcional) recursos legados
-│   ├── css/
-│   ├── js/
-│   └── img/
-├── uploads/                # (Opcional) uploads legados
-├── bootstrap.php           # Inicialização do sistema
-├── composer.json           # Dependências e autoload (PSR-4)
-├── .env                    # Variáveis de ambiente (não versionado)
-├── .env.example            # Exemplo de variáveis de ambiente
-├── .gitignore              # Arquivos e pastas ignorados pelo Git
-└── README.md               # Documentação do projeto
-```
-
----
-
-## Login
-
-Formulário de autenticação para acesso à área restrita.
-
-<!-- Login Image -->
-
-![Login](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/login.png)
-
----
-
-## Área Administrativa
-
-Painel de controle para administradores com dashboards, gestão de usuários, clientes e técnicos.
-
-<!-- Dashboard Admin Image -->
-
-![Dashboard Admin](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/dashboardAdmin.png)
-
-### Tabelas de Dados
-
-* **Clientes**
-
-  <!-- Table Client Image -->
-
-  ![Clientes](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableClient.png)
-
-* **Perfis (Usuários)**
-
-  <!-- Table Profile Image -->
-
-  ![Perfis](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableProfile.png)
-
-* **Técnicos**
-
-  <!-- Table Technical Image -->
-
-  ![Técnicos](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableTechnical.png)
-
-* **Usuários**
-
-  <!-- Table Users Image -->
-
-  ![Usuários](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/tableUsers.png)
-
----
-
-## Configuração do Site
-
-Na área administrativa, você pode editar as informações gerais do site diretamente pelo painel de configurações. Nesta seção, é possível alterar:
-
-* Nome da empresa
-* Descrição e texto do Hero
-* Contato (telefone e email)
-* Endereço
-* Links das redes sociais (Facebook, Instagram, LinkedIn, WhatsApp)
-* Imagens principais (Hero, seção Sobre, etc.)
-
-<!-- Config Site Image -->
-
-![Configuração do Site](https://raw.githubusercontent.com/GabrielCordeiroBarrosoTeles/Imgs_repositorios/main/simaorefrigeracao/configSite.png)
-
----
-
-## Padrão MVC
-
-O sistema segue o padrão **Model-View-Controller (MVC)**:
-
-* **Models**: Lógica de negócio e acesso ao banco de dados.
-* **Views**: Apresentação dos dados ao usuário.
-* **Controllers**: Recebem requisições, interagem com Models e retornam Views.
-
-All requests passam pelo front controller (`public/index.php`) e são roteados conforme configuração em `app/config`.
-
----
-
-## Fluxo de Requisição
-
-1. O usuário faz uma requisição à aplicação.
-2. `public/index.php` inicializa o sistema e carrega dependências.
-3. O sistema de rotas determina qual Controller e ação chamar.
-4. O Controller processa dados (chama Models, valida inputs, etc.) e escolhe uma View.
-5. A View é renderizada e a resposta é enviada ao cliente.
-
----
 
 ## Requisitos
 
-* PHP 7.4 ou superior
-* MySQL 5.7 ou superior (ou MariaDB)
-* Apache com `mod_rewrite` habilitado
-* Composer (para autoload e dependências)
+- Docker e Docker Compose
 
----
+## Credenciais de Acesso
 
-## Instalação
+### Área Administrativa
+- **URL**: http://localhost:8081/admin
+- **Email**: admin@simaorefrigeracao.com
+- **Senha**: password
 
-1. Clone este repositório:
+### Área do Técnico
+- **URL**: http://localhost:8081/tecnico
+- **Email**: tecnico@simaorefrigeracao.com
+- **Senha**: password
 
-   ```bash
-   git clone https://github.com/GabrielCordeiroBarrosoTeles/simaorefrigeracao.git
-   ```
-2. Instale dependências:
+## Passo a Passo para Iniciar o Site
 
-   ```bash
-   cd simaorefrigeracao
-   composer install
-   ```
-3. Copie e configure o `.env`:
+1. **Preparação do Ambiente**
+   - Certifique-se que o Docker Desktop está instalado e em execução
+   - Clone o repositório: `git clone [url-do-repositorio]`
+   - Navegue até a pasta do projeto: `cd simaorefrigeracao`
 
-   ```bash
-   cp .env.example .env
-   # Ajuste as variáveis de conexão ao banco
-   ```
-4. Importe o esquema do banco de dados:
+2. **Construir os Containers**
+   - Execute: `make build`
+   - Este comando constrói as imagens Docker necessárias para o projeto
+   - Aguarde até que todas as imagens sejam construídas
 
-   ```bash
-   mysql -u usuario -p nome_do_banco < database_completo.sql
-   ```
-5. Configure o Apache (document root em `public/`) e permita `.htaccess`.
-6. Acesse o sistema via navegador.
+3. **Iniciar os Containers**
+   - Execute: `make up`
+   - Este comando inicia todos os containers (PHP, Nginx, MySQL)
+   - Aguarde até que todos os serviços estejam disponíveis
 
----
+4. **Instalar Dependências**
+   - Execute: `make composer`
+   - Este comando instala todas as dependências PHP via Composer
+   - Aguarde a conclusão da instalação
 
-## Usuário Padrão (Admin)
+5. **Configurar o Banco de Dados**
+   - Execute: `make setup-db`
+   - Este comando cria o banco de dados e as tabelas necessárias
 
-* Email: `admin@friocerto.com.br`
-* Senha: `admin123`
+6. **Alimentar o Banco de Dados**
+   - Execute: `make seed-db`
+   - Este comando insere dados iniciais no banco de dados, incluindo usuários de teste
 
----
+7. **Acessar o Site**
+   - Abra o navegador e acesse: `http://localhost:8081`
+   - O sistema deve estar funcionando e pronto para uso
+   - Use as credenciais acima para acessar as áreas restritas
 
-## Autenticação e Autorização
+8. **Para Parar os Containers**
+   - Quando terminar de usar, execute: `make down`
+   - Isso irá parar todos os containers
 
-* Gerenciada via *sessions* PHP.
-* Níveis de acesso: `admin`, `tecnico`, `public`.
-* Middleware de verificação para proteger rotas restritas.
+## Comandos úteis
 
----
+- `make up` - Inicia os containers
+- `make down` - Para os containers
+- `make composer` - Executa composer install
+- `make setup-db` - Configura o banco de dados
+- `make seed-db` - Alimenta o banco de dados com dados iniciais
+- `make shell` - Acessa o shell do container PHP
+- `make restart` - Reinicia todos os containers
 
-## Banco de Dados
+## Estrutura do Projeto
 
-* Conexão via PDO com *prepared statements*.
-* Principais tabelas:
+O projeto segue uma arquitetura limpa com as seguintes camadas:
 
-  * `usuarios` (admin e técnicos)
-  * `clientes`
-  * `servicos`
-  * `agendamentos`
-  * `pagamentos`
+- **Domain**: Contém as regras de negócio e entidades principais
+  - Entity: Classes que representam as entidades do domínio
+  - Repository: Interfaces para acesso a dados
+  - Service: Serviços específicos do domínio
+  - ValueObject: Objetos de valor imutáveis
+  - Exception: Exceções específicas do domínio
 
----
+- **Application**: Orquestra o fluxo de dados entre as camadas
+  - UseCase: Implementa casos de uso da aplicação
+  - Service: Serviços de aplicação
+  - Validator: Validação de dados
+  - DTO: Objetos de transferência de dados
 
-## Segurança
+- **Infrastructure**: Implementações técnicas e detalhes externos
+  - Persistence: Implementações de repositórios
+  - Http: Componentes HTTP
+  - Config: Configurações do sistema
+  - Migrations: Migrações do banco de dados
 
-* Proteção contra SQL Injection via prepared statements.
-* Tokens CSRF em formulários.
-* Sanitização de saídas (XSS).
-* Hash de senhas com `password_hash()` (bcrypt).
+- **Presentation**: Interface com o usuário
+  - Controller: Controladores que recebem requisições
+  - View: Templates e componentes visuais
+  - API: Endpoints da API REST
 
----
+## Entidades
 
-## Convenções de Código
-
-* **Autoload**: PSR-4 (Composer)
-* **Estilo**: PSR-12
-* **Classes**: `PascalCase`
-* **Métodos/Variáveis**: `camelCase`
-* **Constantes**: `UPPER_SNAKE_CASE`
-* **Indentação**: 4 espaços
-
----
-
-## Licença
-
-Este projeto está licenciado sob a [MIT License](LICENSE).
+- **Cliente**: Representa os clientes da empresa
+- **Servico**: Representa os serviços oferecidos
+- **Tecnico**: Representa os técnicos da empresa
+- **Agendamento**: Representa os agendamentos de serviços
+- **Usuario**: Representa os usuários do sistema
+- **Contato**: Representa os contatos recebidos pelo site

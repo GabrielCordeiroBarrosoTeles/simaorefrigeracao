@@ -9,20 +9,41 @@ require_once 'helpers/functions.php';
 
 // Verificar se o usuário já está logado
 if (isset($_SESSION['user_id'])) {
-    header('Location: admin-dashboard.php');
+    // Redirecionar com base no nível do usuário
+    if ($_SESSION['user_nivel'] === 'tecnico' || $_SESSION['user_nivel'] === 'tecnico_adm') {
+        header('Location: tecnico-dashboard.php');
+    } else {
+        header('Location: admin-dashboard.php');
+    }
     exit;
 }
 
 // Verificar se é uma requisição de logout
 if (isset($_GET['logout'])) {
+    // Salvar o nível do usuário antes de destruir a sessão
+    $nivel = isset($_SESSION['user_nivel']) ? $_SESSION['user_nivel'] : '';
+    
     // Limpar todas as variáveis de sessão
     $_SESSION = [];
+    
+    // Destruir o cookie da sessão se existir
+    if (ini_get("session.use_cookies")) {
+        $params = session_get_cookie_params();
+        setcookie(session_name(), '', time() - 42000,
+            $params["path"], $params["domain"],
+            $params["secure"], $params["httponly"]
+        );
+    }
     
     // Destruir a sessão
     session_destroy();
     
-    // Redirecionar para a página de login
-    header('Location: admin-login.php');
+    // Redirecionar com base no nível do usuário
+    if ($nivel === 'tecnico' || $nivel === 'tecnico_adm') {
+        header('Location: admin-login.php?tecnico=1');
+    } else {
+        header('Location: admin-login.php');
+    }
     exit;
 }
 
@@ -108,7 +129,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         $stmt->execute();
                         
                         // Redirecionar com base no nível do usuário
-                        if ($usuario['nivel'] === 'tecnico') {
+                        if ($usuario['nivel'] === 'tecnico' || $usuario['nivel'] === 'tecnico_adm') {
                             header('Location: tecnico-dashboard.php');
                         } else {
                             header('Location: admin-dashboard.php');
@@ -128,6 +149,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 }
+
+// Determinar o tipo de login (admin ou técnico)
+$is_tecnico = isset($_GET['tecnico']) && $_GET['tecnico'] == 1;
+$login_title = $is_tecnico ? 'Área do Técnico' : 'Painel Administrativo';
 ?>
 
 <!DOCTYPE html>
@@ -135,7 +160,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login - Painel Administrativo | <?= defined('SITE_NAME') ? SITE_NAME : 'Simão Refrigeração' ?></title>
+    <title><?= $login_title ?> | <?= defined('SITE_NAME') ? SITE_NAME : 'Simão Refrigeração' ?></title>
     
     <!-- CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -353,6 +378,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             margin-right: 5px;
         }
         
+        .login-toggle {
+            text-align: center;
+            margin-top: 15px;
+        }
+        
+        .login-toggle a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .login-toggle a:hover {
+            text-decoration: underline;
+        }
+        
         /* Responsividade */
         @media (max-width: 480px) {
             .login-container {
@@ -382,7 +422,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <i class="fas fa-snowflake"></i>
                 <span>Simão Refrigeração</span>
             </div>
-            <h1>Painel Administrativo</h1>
+            <h1><?= $login_title ?></h1>
             <p>Faça login para acessar o sistema</p>
         </div>
         
@@ -434,6 +474,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <i class="fas fa-sign-in-alt"></i> Entrar
                 </button>
             </form>
+            
+            <div class="login-toggle">
+                <?php if ($is_tecnico): ?>
+                    <a href="admin-login.php">Acessar como Administrador</a>
+                <?php else: ?>
+                    <a href="admin-login.php?tecnico=1">Acessar como Técnico</a>
+                <?php endif; ?>
+            </div>
             
             <div class="text-center mt-3">
                 <a href="index.php" class="back-to-site">

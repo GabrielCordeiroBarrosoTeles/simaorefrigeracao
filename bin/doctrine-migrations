@@ -1,0 +1,49 @@
+#!/usr/bin/env php
+<?php
+// bin/doctrine-migrations
+
+// Definir constantes do banco de dados diretamente
+define('DB_HOST', 'db');
+define('DB_NAME', 'simaorefrigeracao');
+define('DB_USER', 'simao');
+define('DB_PASS', 'root');
+
+use Doctrine\Migrations\Configuration\EntityManager\ExistingEntityManager;
+use Doctrine\Migrations\Configuration\Migration\PhpFile;
+use Doctrine\Migrations\DependencyFactory;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\ORMSetup;
+use Doctrine\Migrations\Tools\Console\ConsoleRunner;
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+// Configuração do Doctrine
+$config = ORMSetup::createAttributeMetadataConfiguration(
+    [__DIR__ . '/../src/Domain/Entity'],
+    true
+);
+
+// Configuração da conexão com o banco de dados
+$connectionParams = [
+    'driver'   => 'pdo_mysql',
+    'host'     => DB_HOST,
+    'dbname'   => DB_NAME,
+    'user'     => DB_USER,
+    'password' => DB_PASS,
+    'charset'  => 'utf8mb4'
+];
+
+try {
+    // Criar o EntityManager
+    $entityManager = EntityManager::create($connectionParams, $config);
+    
+    // Configuração das Migrations
+    $migrationConfig = new PhpFile(__DIR__ . '/../migrations.php');
+    $dependencyFactory = DependencyFactory::fromEntityManager($migrationConfig, new ExistingEntityManager($entityManager));
+    
+    // Executar o console
+    ConsoleRunner::run($dependencyFactory);
+} catch (Exception $e) {
+    echo "Erro: " . $e->getMessage() . "\n";
+    exit(1);
+}

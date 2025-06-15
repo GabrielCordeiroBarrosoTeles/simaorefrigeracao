@@ -41,30 +41,50 @@ if (table_exists($db, 'tecnicos')) {
         $stmt->bindParam(':usuario_id', $_SESSION['user_id']);
         $stmt->execute();
         $tecnico = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$tecnico) {
+            error_log("Técnico não encontrado para o usuário ID: " . $_SESSION['user_id']);
+        }
     } catch (Exception $e) {
-        // Ignorar erro
+        error_log("Erro ao buscar informações do técnico: " . $e->getMessage());
     }
 }
 
 // Se não encontrar o técnico, criar um registro básico
 if (!$tecnico && table_exists($db, 'tecnicos')) {
     try {
+        error_log("Criando novo registro de técnico para o usuário ID: " . $_SESSION['user_id']);
+        
+        // Definir valores padrão
+        $nome = isset($_SESSION['user_nome']) ? $_SESSION['user_nome'] : 'Técnico';
+        $email = isset($_SESSION['user_email']) ? $_SESSION['user_email'] : 'tecnico@simaorefrigeracao.com';
+        $disponivel = true;
+        
         $query = "INSERT INTO tecnicos (nome, email, usuario_id, disponivel) 
-                  VALUES (:nome, :email, :usuario_id, TRUE)";
+                  VALUES (:nome, :email, :usuario_id, :disponivel)";
         $stmt = $db->prepare($query);
-        $stmt->bindParam(':nome', $_SESSION['user_nome']);
-        $stmt->bindParam(':email', $_SESSION['user_email']);
+        $stmt->bindParam(':nome', $nome);
+        $stmt->bindParam(':email', $email);
         $stmt->bindParam(':usuario_id', $_SESSION['user_id']);
+        $stmt->bindParam(':disponivel', $disponivel, PDO::PARAM_BOOL);
         $stmt->execute();
         
-        // Buscar o técnico recém-criado
-        $query = "SELECT * FROM tecnicos WHERE usuario_id = :usuario_id LIMIT 1";
-        $stmt = $db->prepare($query);
-        $stmt->bindParam(':usuario_id', $_SESSION['user_id']);
-        $stmt->execute();
-        $tecnico = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Obter o ID do técnico recém-inserido
+        $tecnico_id = $db->lastInsertId();
+        error_log("Novo técnico criado com ID: " . $tecnico_id);
+        
+        // Criar um array com os dados do técnico para uso imediato
+        $tecnico = [
+            'id' => $tecnico_id,
+            'nome' => $nome,
+            'email' => $email,
+            'usuario_id' => $_SESSION['user_id'],
+            'disponivel' => $disponivel
+        ];
+        
+        error_log("Técnico criado com sucesso: " . print_r($tecnico, true));
     } catch (Exception $e) {
-        // Ignorar erro
+        error_log("Erro ao criar novo registro de técnico: " . $e->getMessage());
     }
 }
 
@@ -74,6 +94,7 @@ if ($tecnico && table_exists($db, 'agendamentos')) {
     try {
         $query = "SELECT a.*, 
                  IFNULL((SELECT nome FROM clientes WHERE id = a.cliente_id), 'Cliente não encontrado') as cliente_nome,
+                 IFNULL((SELECT telefone FROM clientes WHERE id = a.cliente_id), '') as cliente_telefone,
                  IFNULL((SELECT nome FROM servicos WHERE id = a.servico_id), 'Serviço não encontrado') as servico_nome
                  FROM agendamentos a 
                  WHERE a.tecnico_id = :tecnico_id
@@ -83,8 +104,71 @@ if ($tecnico && table_exists($db, 'agendamentos')) {
         $stmt->bindParam(':tecnico_id', $tecnico['id']);
         $stmt->execute();
         $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Verificar se há resultados
+        if (empty($agendamentos)) {
+            error_log("Nenhum agendamento encontrado para o técnico ID: " . $tecnico['id']);
+        }
     } catch (Exception $e) {
-        // Ignorar erro
+        error_log("Erro ao buscar agendamentos: " . $e->getMessage());
+    }
+}
+
+// Obter agendamentos de hoje
+$agendamentos_hoje = [];
+if ($tecnico && table_exists($db, 'agendamentos')) {
+    try {
+        $hoje = date('Y-m-d');
+        $query = "SELECT a.*, 
+                 IFNULL((SELECT nome FROM clientes WHERE id = a.cliente_id), 'Cliente não encontrado') as cliente_nome,
+                 IFNULL((SELECT telefone FROM clientes WHERE id = a.cliente_id), '') as cliente_telefone,
+                 IFNULL((SELECT nome FROM servicos WHERE id = a.servico_id), 'Serviço não encontrado') as servico_nome
+                 FROM agendamentos a 
+                 WHERE a.tecnico_id = :tecnico_id 
+                 AND DATE(a.data_agendamento) = :hoje
+                 ORDER BY a.data_agendamento ASC";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':tecnico_id', $tecnico['id']);
+        $stmt->bindParam(':hoje', $hoje);
+        $stmt->execute();
+        $agendamentos_hoje = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Verificar se há resultados
+        if (empty($agendamentos_hoje)) {
+            error_log("Nenhum agendamento para hoje encontrado para o técnico ID: " . $tecnico['id']);
+        }
+    } catch (Exception $e) {
+        error_log("Erro ao buscar agendamentos de hoje: " . $e->getMessage());
+    }
+}
+
+// Obter agendamentos pendentes
+$agendamentos_pendentes = [];
+if ($tecnico && table_exists($db, 'agendamentos')) {
+    try {
+        $hoje = date('Y-m-d');
+        $query = "SELECT a.*, 
+                 IFNULL((SELECT nome FROM clientes WHERE id = a.cliente_id), 'Cliente não encontrado') as cliente_nome,
+                 IFNULL((SELECT telefone FROM clientes WHERE id = a.cliente_id), '') as cliente_telefone,
+                 IFNULL((SELECT nome FROM servicos WHERE id = a.servico_id), 'Serviço não encontrado') as servico_nome
+                 FROM agendamentos a 
+                 WHERE a.tecnico_id = :tecnico_id 
+                 AND a.status = 'pendente'
+                 AND DATE(a.data_agendamento) >= :hoje
+                 ORDER BY a.data_agendamento ASC
+                 LIMIT 10";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':tecnico_id', $tecnico['id']);
+        $stmt->bindParam(':hoje', $hoje);
+        $stmt->execute();
+        $agendamentos_pendentes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Verificar se há resultados
+        if (empty($agendamentos_pendentes)) {
+            error_log("Nenhum agendamento pendente encontrado para o técnico ID: " . $tecnico['id']);
+        }
+    } catch (Exception $e) {
+        error_log("Erro ao buscar agendamentos pendentes: " . $e->getMessage());
     }
 }
 
@@ -684,7 +768,7 @@ function truncate_tecnico($text, $length) {
                        Meu Perfil
                    </a>
                    <div class="dropdown-divider"></div>
-                   <a href="admin-login.php?logout=1">
+                   <a href="logout.php" id="logoutLink">
                        <i class="fas fa-sign-out-alt"></i>
                        Sair
                    </a>
@@ -722,7 +806,7 @@ function truncate_tecnico($text, $length) {
                <i class="fas fa-user"></i>
                Meu Perfil
            </a>
-           <a href="admin-login.php?logout=1" class="sidebar-menu-item">
+           <a href="logout.php" class="sidebar-menu-item" id="sidebarLogoutLink">
                <i class="fas fa-sign-out-alt"></i>
                Sair
            </a>
@@ -753,8 +837,8 @@ function truncate_tecnico($text, $length) {
                            <h2 class="mb-1"><?= htmlspecialchars($_SESSION['user_nome']) ?></h2>
                            <p class="text-muted mb-2"><?= htmlspecialchars($_SESSION['user_email']) ?></p>
                            <p class="mb-0">
-                               <span class="badge <?= $tecnico && $tecnico['disponivel'] ? 'badge-success' : 'badge-warning' ?>">
-                                   <?= $tecnico && $tecnico['disponivel'] ? 'Disponível' : 'Indisponível' ?>
+                               <span class="badge <?= $tecnico && isset($tecnico['disponivel']) && $tecnico['disponivel'] ? 'badge-success' : 'badge-warning' ?>">
+                                   <?= $tecnico && isset($tecnico['disponivel']) && $tecnico['disponivel'] ? 'Disponível' : 'Indisponível' ?>
                                </span>
                            </p>
                        </div>
@@ -765,15 +849,15 @@ function truncate_tecnico($text, $length) {
        
        <!-- Stats Cards -->
        <div class="row">
-           <div class="col-md-6 col-lg-4 mb-4">
+           <div class="col-md-6 col-lg-3 mb-4">
                <div class="stats-card">
                    <div class="stats-card-header">
                        <div class="stats-card-icon primary">
                            <i class="fas fa-calendar-check"></i>
                        </div>
                    </div>
-                   <div class="stats-card-value"><?= count($agendamentos) ?></div>
-                   <div class="stats-card-label">Agendamentos</div>
+                   <div class="stats-card-value" id="total-agendamentos"><?= count($agendamentos) ?></div>
+                   <div class="stats-card-label">Total Agendamentos</div>
                    <div class="stats-card-footer">
                        <a href="tecnico-agendamentos.php" class="stats-card-link">
                            Ver todos <i class="fas fa-arrow-right"></i>
@@ -782,14 +866,14 @@ function truncate_tecnico($text, $length) {
                </div>
            </div>
            
-           <div class="col-md-6 col-lg-4 mb-4">
+           <div class="col-md-6 col-lg-3 mb-4">
                <div class="stats-card">
                    <div class="stats-card-header">
                        <div class="stats-card-icon success">
                            <i class="fas fa-check-circle"></i>
                        </div>
                    </div>
-                   <div class="stats-card-value">
+                   <div class="stats-card-value" id="total-concluidos">
                        <?php
                        $concluidos = 0;
                        foreach ($agendamentos as $agendamento) {
@@ -809,14 +893,14 @@ function truncate_tecnico($text, $length) {
                </div>
            </div>
            
-           <div class="col-md-6 col-lg-4 mb-4">
+           <div class="col-md-6 col-lg-3 mb-4">
                <div class="stats-card">
                    <div class="stats-card-header">
                        <div class="stats-card-icon warning">
                            <i class="fas fa-clock"></i>
                        </div>
                    </div>
-                   <div class="stats-card-value">
+                   <div class="stats-card-value" id="total-pendentes">
                        <?php
                        $pendentes = 0;
                        foreach ($agendamentos as $agendamento) {
@@ -835,16 +919,33 @@ function truncate_tecnico($text, $length) {
                    </div>
                </div>
            </div>
+           
+           <div class="col-md-6 col-lg-3 mb-4">
+               <div class="stats-card">
+                   <div class="stats-card-header">
+                       <div class="stats-card-icon info">
+                           <i class="fas fa-calendar-day"></i>
+                       </div>
+                   </div>
+                   <div class="stats-card-value"><?= count($agendamentos_hoje) ?></div>
+                   <div class="stats-card-label">Hoje</div>
+                   <div class="stats-card-footer">
+                       <a href="#agendamentos-hoje" class="stats-card-link">
+                           Ver abaixo <i class="fas fa-arrow-down"></i>
+                       </a>
+                   </div>
+               </div>
+           </div>
        </div>
        
        <div class="row">
-           <!-- Agendamentos -->
+           <!-- Agendamentos de Hoje -->
            <div class="col-lg-12 mb-4">
                <div class="data-table-card">
                    <div class="data-table-header">
                        <h2 class="data-table-title">
-                           <i class="fas fa-calendar-alt"></i>
-                           Meus Agendamentos
+                           <i class="fas fa-calendar-day"></i>
+                           Agendamentos de Hoje (<?= date('d/m/Y') ?>)
                        </h2>
                    </div>
                    <div class="data-table-body">
@@ -852,24 +953,31 @@ function truncate_tecnico($text, $length) {
                            <table class="data-table table">
                                <thead>
                                    <tr>
+                                       <th>Horário</th>
                                        <th>Cliente</th>
                                        <th>Serviço</th>
-                                       <th>Data</th>
                                        <th>Status</th>
                                        <th class="text-center">Ações</th>
                                    </tr>
                                </thead>
                                <tbody>
-                                   <?php if (empty($agendamentos)): ?>
+                                   <?php if (empty($agendamentos_hoje)): ?>
                                    <tr>
-                                       <td colspan="5" class="text-center">Nenhum agendamento encontrado.</td>
+                                       <td colspan="5" class="text-center">Nenhum agendamento para hoje.</td>
                                    </tr>
                                    <?php else: ?>
-                                       <?php foreach ($agendamentos as $agendamento): ?>
+                                       <?php foreach ($agendamentos_hoje as $agendamento): ?>
                                        <tr>
-                                           <td><?= htmlspecialchars($agendamento['cliente_nome']) ?></td>
+                                           <td>
+                                               <?= isset($agendamento['data_agendamento']) ? format_date($agendamento['data_agendamento'], 'H:i') : 'N/A' ?>
+                                           </td>
+                                           <td>
+                                               <strong><?= htmlspecialchars($agendamento['cliente_nome']) ?></strong>
+                                               <?php if (!empty($agendamento['cliente_telefone'])): ?>
+                                               <br><small><?= htmlspecialchars($agendamento['cliente_telefone']) ?></small>
+                                               <?php endif; ?>
+                                           </td>
                                            <td><?= htmlspecialchars($agendamento['servico_nome']) ?></td>
-                                           <td><?= isset($agendamento['data_agendamento']) ? date('d/m/Y H:i', strtotime($agendamento['data_agendamento'])) : 'N/A' ?></td>
                                            <td>
                                                <?php
                                                $status_class = 'badge badge-info';
@@ -878,14 +986,22 @@ function truncate_tecnico($text, $length) {
                                                if (isset($agendamento['status'])) {
                                                    switch ($agendamento['status']) {
                                                        case 'pendente':
+                                                       case 'p':
                                                            $status_class = 'badge badge-warning';
                                                            $status_text = 'Pendente';
                                                            break;
+                                                       case 'em_andamento':
+                                                       case 'a':
+                                                           $status_class = 'badge badge-info';
+                                                           $status_text = 'Em andamento';
+                                                           break;
                                                        case 'concluido':
+                                                       case 'c':
                                                            $status_class = 'badge badge-success';
                                                            $status_text = 'Concluído';
                                                            break;
                                                        case 'cancelado':
+                                                       case 'x':
                                                            $status_class = 'badge badge-danger';
                                                            $status_text = 'Cancelado';
                                                            break;
@@ -893,6 +1009,66 @@ function truncate_tecnico($text, $length) {
                                                }
                                                ?>
                                                <span class="<?= $status_class ?>"><?= $status_text ?></span>
+                                           </td>
+                                           <td class="text-center">
+                                               <a href="tecnico-agendamento.php?id=<?= $agendamento['id'] ?>" class="btn btn-sm btn-info">
+                                                   <i class="fas fa-eye"></i>
+                                               </a>
+                                           </td>
+                                       </tr>
+                                       <?php endforeach; ?>
+                                   <?php endif; ?>
+                               </tbody>
+                           </table>
+                       </div>
+                   </div>
+               </div>
+           </div>
+           
+           <!-- Próximos Agendamentos -->
+           <div class="col-lg-12 mb-4">
+               <div class="data-table-card">
+                   <div class="data-table-header">
+                       <h2 class="data-table-title">
+                           <i class="fas fa-calendar-alt"></i>
+                           Próximos Agendamentos
+                       </h2>
+                   </div>
+                   <div class="data-table-body">
+                       <div class="data-table-responsive">
+                           <table class="data-table table">
+                               <thead>
+                                   <tr>
+                                       <th>Data</th>
+                                       <th>Cliente</th>
+                                       <th>Serviço</th>
+                                       <th>Status</th>
+                                       <th class="text-center">Ações</th>
+                                   </tr>
+                               </thead>
+                               <tbody>
+                                   <?php if (empty($agendamentos_pendentes)): ?>
+                                   <tr>
+                                       <td colspan="5" class="text-center">Nenhum agendamento pendente.</td>
+                                   </tr>
+                                   <?php else: ?>
+                                       <?php 
+                                       $count = 0;
+                                       foreach ($agendamentos_pendentes as $agendamento): 
+                                           if ($count >= 5) break; // Limitar a 5 agendamentos
+                                           $count++;
+                                       ?>
+                                       <tr>
+                                           <td><?= isset($agendamento['data_agendamento']) ? format_date($agendamento['data_agendamento'], 'd/m/Y H:i') : 'N/A' ?></td>
+                                           <td>
+                                               <strong><?= htmlspecialchars($agendamento['cliente_nome']) ?></strong>
+                                               <?php if (!empty($agendamento['cliente_telefone'])): ?>
+                                               <br><small><?= htmlspecialchars($agendamento['cliente_telefone']) ?></small>
+                                               <?php endif; ?>
+                                           </td>
+                                           <td><?= htmlspecialchars($agendamento['servico_nome']) ?></td>
+                                           <td>
+                                               <span class="badge badge-warning">Pendente</span>
                                            </td>
                                            <td class="text-center">
                                                <a href="tecnico-agendamento.php?id=<?= $agendamento['id'] ?>" class="btn btn-sm btn-info">
@@ -925,16 +1101,20 @@ function truncate_tecnico($text, $length) {
        
        // Toggle user dropdown
        document.getElementById('userDropdown').addEventListener('click', function(e) {
+           e.preventDefault();
            e.stopPropagation();
            document.getElementById('userDropdownMenu').classList.toggle('show');
        });
        
-       // Close dropdown when clicking outside
-       document.addEventListener('click', function(e) {
-           const dropdown = document.getElementById('userDropdownMenu');
-           if (dropdown.classList.contains('show') && !e.target.closest('.user-dropdown')) {
-               dropdown.classList.remove('show');
-           }
+       // Adicionar evento de clique aos links de logout
+       document.getElementById('logoutLink').addEventListener('click', function(e) {
+           e.preventDefault();
+           window.location.href = 'logout.php';
+       });
+       
+       document.getElementById('sidebarLogoutLink').addEventListener('click', function(e) {
+           e.preventDefault();
+           window.location.href = 'logout.php';
        });
        
        // Close sidebar when clicking outside on mobile
@@ -960,6 +1140,53 @@ function truncate_tecnico($text, $length) {
        
        window.addEventListener('resize', handleResize);
        handleResize();
+       
+       // Função para atualizar estatísticas
+       function atualizarEstatisticas() {
+           try {
+               // Usando os dados já disponíveis na página
+               const agendamentos = <?= json_encode($agendamentos) ?>;
+               const agendamentosHoje = <?= json_encode($agendamentos_hoje) ?>;
+               const agendamentosPendentes = <?= json_encode($agendamentos_pendentes) ?>;
+               
+               console.log("Dados carregados:", {
+                   agendamentos: agendamentos,
+                   agendamentosHoje: agendamentosHoje,
+                   agendamentosPendentes: agendamentosPendentes
+               });
+               
+               let total = agendamentos ? agendamentos.length : 0;
+               let concluidos = 0;
+               let pendentes = 0;
+               
+               if (agendamentos && agendamentos.length > 0) {
+                   agendamentos.forEach(function(agendamento) {
+                       if (agendamento && agendamento.status === 'concluido') {
+                           concluidos++;
+                       } else if (agendamento && agendamento.status === 'pendente') {
+                           pendentes++;
+                       }
+                   });
+               }
+               
+               // Verificar se os elementos existem antes de atualizar
+               const totalElement = document.getElementById('total-agendamentos');
+               const concluidosElement = document.getElementById('total-concluidos');
+               const pendentesElement = document.getElementById('total-pendentes');
+               
+               if (totalElement) totalElement.textContent = total;
+               if (concluidosElement) concluidosElement.textContent = concluidos;
+               if (pendentesElement) pendentesElement.textContent = pendentes;
+           } catch (error) {
+               console.error("Erro ao atualizar estatísticas:", error);
+           }
+       }
+       
+       // Executar quando o DOM estiver carregado
+       document.addEventListener('DOMContentLoaded', function() {
+           // Atualizar estatísticas
+           atualizarEstatisticas();
+       });
    </script>
 </body>
 </html>

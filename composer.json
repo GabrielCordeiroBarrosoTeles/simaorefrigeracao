@@ -1,0 +1,26 @@
+{
+    "name": "simaorefrigeracao/app",
+    "description": "Sistema de gerenciamento para Simão Refrigeração",
+    "type": "project",
+    "require": {
+        "php": ">=8.1",
+        "doctrine/orm": "^2.11",
+        "doctrine/dbal": "^3.2",
+        "symfony/cache": "^5.4",
+        "doctrine/annotations": "^1.13",
+        "doctrine/migrations": "^3.5"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "src/"
+        }
+    },
+    "scripts": {
+        "migrations:diff": "doctrine-migrations migrations:diff",
+        "migrations:migrate": "doctrine-migrations migrations:migrate",
+        "migrations:generate": "doctrine-migrations migrations:generate",
+        "orm:schema-tool:create": "doctrine orm:schema-tool:create",
+        "orm:schema-tool:update": "doctrine orm:schema-tool:update",
+        "orm:validate-schema": "doctrine orm:validate-schema"
+    }
+}
