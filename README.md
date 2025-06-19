@@ -41,58 +41,22 @@ graph TD
     style WEB fill:#ecf0f1,stroke:#2980b9,stroke-width:2px
 ```
 
-## Nova Estrutura do Projeto
+## Estrutura do Projeto
 
 ```
-simaorefrigeracao/
-├── app/                      # Aplicação Next.js/React
-│   ├── admin/                # Páginas de administração React
-│   ├── globals.css           # Estilos globais
-│   ├── layout.tsx            # Layout principal
-│   └── page.tsx              # Página inicial
-├── bin/                      # Binários e executáveis
-├── components/               # Componentes React reutilizáveis
-│   └── ui/                   # Componentes de UI
-├── config/                   # Configurações do sistema
-│   ├── config.php            # Configurações gerais
-│   └── database.php          # Configuração do banco de dados
-├── controllers/              # Controladores PHP
-│   ├── Admin/                # Controladores administrativos
-│   └── ...                   # Outros controladores
-├── docker/                   # Configurações Docker
-├── helpers/                  # Funções auxiliares
-├── hooks/                    # React hooks
-├── lib/                      # Bibliotecas e utilitários
-├── public/                   # Arquivos públicos acessíveis via web
-│   ├── admin/                # Páginas administrativas PHP
-│   ├── api/                  # Endpoints da API
-│   ├── assets/               # Recursos estáticos (CSS, JS, imagens)
-│   ├── tecnico/              # Páginas do técnico
-│   └── index.php             # Ponto de entrada principal
-├── scripts/                  # Scripts de utilidade e manutenção
-├── src/                      # Código fonte principal
-│   ├── Application/          # Camada de aplicação
-│   ├── Domain/               # Camada de domínio
-│   ├── Infrastructure/       # Camada de infraestrutura
-│   └── Presentation/         # Camada de apresentação
-├── styles/                   # Estilos globais
-├── vendor/                   # Dependências Composer (gerado automaticamente)
-├── views/                    # Templates e visualizações
-│   ├── admin/                # Views administrativas
-│   ├── public/               # Views públicas
-│   └── tecnico/              # Views do técnico
-├── .dockerignore             # Arquivos ignorados pelo Docker
-├── .env.example              # Exemplo de variáveis de ambiente
-├── .gitignore                # Arquivos ignorados pelo Git
-├── .htaccess                 # Configurações do Apache
-├── bootstrap.php             # Inicialização do sistema
-├── composer.json             # Dependências PHP
-├── docker-compose.yml        # Configuração do Docker Compose
-├── index.php                 # Ponto de entrada principal
-├── next.config.mjs           # Configuração do Next.js
-├── package.json              # Dependências JavaScript
-├── tailwind.config.ts        # Configuração do Tailwind CSS
-└── tsconfig.json             # Configuração do TypeScript
+src/
+├── DataAccess/              # Camada de Acesso aos Dados
+│   ├── Database/           # Interfaces e implementações de BD
+│   ├── Storage/            # Armazenamento de arquivos
+│   └── Repositories/       # Repositórios de dados
+├── BusinessLogic/          # Camada de Lógica de Negócio
+│   ├── Entities/          # Entidades de domínio
+│   ├── Services/          # Serviços de negócio
+│   └── UseCases/          # Casos de uso
+└── Presentation/           # Camada de Apresentação
+    ├── API/               # Controllers da API REST
+    ├── Web/               # Controllers Web
+    └── CLI/               # Interface de linha de comando
 ```
 
 ## Princípios da Arquitetura
@@ -137,13 +101,7 @@ cp .env.example .env
 ```bash
 # Desenvolvimento
 npm run dev
-php -S localhost:8000 -t public
-```
-
-### Reorganização de Arquivos
-Para organizar os arquivos da raiz para a nova estrutura:
-```bash
-php reorganize_structure.php
+php -S localhost:8000
 ```
 
 ## Exemplos de Uso
@@ -158,8 +116,9 @@ DELETE /api/clientes/{id}  # Excluir cliente
 
 ### Interface Web
 ```
-/admin/dashboard           # Dashboard administrativo
-/tecnico/agendamentos      # Agendamentos do técnico
+/clientes                  # Lista de clientes
+/clientes/create           # Formulário de criação
+/clientes/{id}/edit        # Formulário de edição
 ```
 
 ## Vantagens da Arquitetura
