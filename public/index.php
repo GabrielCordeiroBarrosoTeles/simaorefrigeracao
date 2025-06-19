@@ -1,22 +1,11 @@
 <?php
-// Iniciar sessão
-session_start();
+/**
+ * Ponto de entrada principal da aplicação
+ * Roteador central que direciona as requisições para os controladores apropriados
+ */
 
-// Definir constantes de caminho
-define('ROOT_DIR', dirname(__DIR__));
-define('SRC_DIR', ROOT_DIR . '/src');
-define('CONFIG_DIR', SRC_DIR . '/config');
-define('HELPERS_DIR', SRC_DIR . '/helpers');
-define('VIEWS_DIR', SRC_DIR . '/views');
-define('ADMIN_DIR', SRC_DIR . '/admin');
-define('TECNICO_DIR', SRC_DIR . '/tecnico');
-define('PUBLIC_DIR', ROOT_DIR . '/public');
-define('ASSETS_DIR', PUBLIC_DIR . '/assets');
-
-// Incluir arquivos necessários
-require_once CONFIG_DIR . '/config.php';
-require_once CONFIG_DIR . '/database.php';
-require_once HELPERS_DIR . '/functions.php';
+// Carregar o bootstrap do sistema
+require_once __DIR__ . '/../bootstrap.php';
 
 // Obter a URL solicitada
 $request_uri = $_SERVER['REQUEST_URI'];
@@ -26,70 +15,107 @@ $base_path = '/simaorefrigeracao'; // Ajuste conforme necessário
 $request_uri = str_replace($base_path, '', $request_uri);
 $request_uri = strtok($request_uri, '?');
 
-// Verificar se é um arquivo de assets
-if (strpos($request_uri, '/assets/') === 0) {
-    $file_path = PUBLIC_DIR . $request_uri;
-    if (file_exists($file_path)) {
-        $extension = pathinfo($file_path, PATHINFO_EXTENSION);
-        switch ($extension) {
-            case 'css':
-                header('Content-Type: text/css');
-                break;
-            case 'js':
-                header('Content-Type: application/javascript');
-                break;
-            case 'jpg':
-            case 'jpeg':
-                header('Content-Type: image/jpeg');
-                break;
-            case 'png':
-                header('Content-Type: image/png');
-                break;
-            case 'gif':
-                header('Content-Type: image/gif');
-                break;
-        }
-        readfile($file_path);
-        exit;
-    }
-}
+// Rotas
+$routes = [
+    // Rotas públicas
+    '/' => ['HomeController', 'index'],
+    '/contato' => ['ContatoController', 'index'],
+    '/processar-contato' => ['ContatoController', 'processar'],
+    
+    // Rotas de autenticação
+    '/admin/login' => ['AuthController', 'loginForm'],
+    '/admin/autenticar' => ['AuthController', 'autenticar'],
+    '/admin/logout' => ['AuthController', 'logout'],
+    
+    // Rotas administrativas
+    '/admin' => ['Admin\\DashboardController', 'index'],
+    '/admin/dashboard' => ['Admin\\DashboardController', 'index'],
+    
+    // Rotas de serviços
+    '/admin/servicos' => ['Admin\\ServicosController', 'index'],
+    '/admin/servicos/novo' => ['Admin\\ServicosController', 'create'],
+    '/admin/servicos/salvar' => ['Admin\\ServicosController', 'store'],
+    '/admin/servicos/editar' => ['Admin\\ServicosController', 'edit'],
+    '/admin/servicos/atualizar' => ['Admin\\ServicosController', 'update'],
+    '/admin/servicos/excluir' => ['Admin\\ServicosController', 'delete'],
+    
+    // Rotas de clientes
+    '/admin/clientes' => ['Admin\\ClientesController', 'index'],
+    '/admin/clientes/novo' => ['Admin\\ClientesController', 'create'],
+    '/admin/clientes/salvar' => ['Admin\\ClientesController', 'store'],
+    '/admin/clientes/editar' => ['Admin\\ClientesController', 'edit'],
+    '/admin/clientes/atualizar' => ['Admin\\ClientesController', 'update'],
+    '/admin/clientes/excluir' => ['Admin\\ClientesController', 'delete'],
+    '/admin/clientes/agendamentos' => ['Admin\\ClientesController', 'agendamentos'],
+    
+    // Rotas de técnicos
+    '/admin/tecnicos' => ['Admin\\TecnicosController', 'index'],
+    '/admin/tecnicos/novo' => ['Admin\\TecnicosController', 'create'],
+    '/admin/tecnicos/salvar' => ['Admin\\TecnicosController', 'store'],
+    '/admin/tecnicos/editar' => ['Admin\\TecnicosController', 'edit'],
+    '/admin/tecnicos/atualizar' => ['Admin\\TecnicosController', 'update'],
+    '/admin/tecnicos/excluir' => ['Admin\\TecnicosController', 'delete'],
+    '/admin/tecnicos/agendamentos' => ['Admin\\TecnicosController', 'agendamentos'],
+    '/admin/tecnicos/api' => ['Admin\\TecnicosController', 'api'],
+    
+    // Rotas de agendamentos
+    '/admin/agendamentos' => ['Admin\\AgendamentosController', 'index'],
+    '/admin/agendamentos/calendario' => ['Admin\\AgendamentosController', 'calendario'],
+    '/admin/agendamentos/novo' => ['Admin\\AgendamentosController', 'create'],
+    '/admin/agendamentos/salvar' => ['Admin\\AgendamentosController', 'store'],
+    '/admin/agendamentos/editar' => ['Admin\\AgendamentosController', 'edit'],
+    '/admin/agendamentos/atualizar' => ['Admin\\AgendamentosController', 'update'],
+    '/admin/agendamentos/excluir' => ['Admin\\AgendamentosController', 'delete'],
+    '/admin/agendamentos/api' => ['Admin\\AgendamentosController', 'api'],
+    
+    // Rotas para técnicos logados
+    '/tecnico' => ['TecnicoController', 'index'],
+    '/tecnico/calendario' => ['TecnicoController', 'calendario'],
+    '/tecnico/agendamento' => ['TecnicoController', 'agendamento'],
+    '/tecnico/atualizar-status' => ['TecnicoController', 'atualizarStatus'],
+    '/tecnico/api' => ['TecnicoController', 'api'],
+    
+    // Rota de erro
+    '/erro' => ['ErrorController', 'index'],
+];
 
-// Roteamento básico
-if ($request_uri === '/admin-login.php') {
-    // Página de login especial
-    require_once SRC_DIR . '/admin/login.php';
-} elseif (strpos($request_uri, '/admin') === 0) {
-    // Rota administrativa
-    $path = str_replace('/admin', '', $request_uri);
-    $path = $path ? $path : '/dashboard';
-    $file = ADMIN_DIR . $path . '.php';
+// Verificar se a rota existe
+if (isset($routes[$request_uri])) {
+    $controller_name = $routes[$request_uri][0];
+    $action_name = $routes[$request_uri][1];
     
-    if (file_exists($file)) {
-        require_once $file;
+    // Carregar o controlador
+    if (strpos($controller_name, 'Admin\\\\') === 0) {
+        $controller_file = CONTROLLERS_DIR . '/' . str_replace('\\\\', '/', $controller_name) . '.php';
+        $controller_name = str_replace('Admin\\\\', '', $controller_name);
     } else {
-        require_once ADMIN_DIR . '/dashboard.php';
+        $controller_file = CONTROLLERS_DIR . '/' . $controller_name . '.php';
     }
-} elseif (strpos($request_uri, '/tecnico') === 0) {
-    // Rota do técnico
-    $path = str_replace('/tecnico', '', $request_uri);
-    $path = $path ? $path : '/dashboard';
-    $file = TECNICO_DIR . $path . '.php';
     
-    if (file_exists($file)) {
-        require_once $file;
+    if (file_exists($controller_file)) {
+        require_once $controller_file;
+        
+        // Instanciar o controlador e chamar a ação
+        $controller = new $controller_name();
+        
+        // Verificar se o método existe
+        if (method_exists($controller, $action_name)) {
+            $controller->$action_name();
+        } else {
+            // Método não encontrado
+            error_log("Método $action_name não encontrado no controlador $controller_name");
+            http_response_code(404);
+            require VIEWS_DIR . '/404.php';
+        }
     } else {
-        require_once TECNICO_DIR . '/dashboard.php';
+        // Controlador não encontrado
+        error_log("Controlador $controller_file não encontrado");
+        http_response_code(404);
+        require VIEWS_DIR . '/404.php';
     }
 } else {
-    // Rota pública
-    if ($request_uri === '/' || $request_uri === '') {
-        require_once SRC_DIR . '/index.php';
-    } else {
-        $file = SRC_DIR . $request_uri;
-        if (file_exists($file)) {
-            require_once $file;
-        } else {
-            require_once SRC_DIR . '/index.php';
-        }
-    }
+    // Rota não encontrada
+    error_log("Rota $request_uri não encontrada");
+    http_response_code(404);
+    require VIEWS_DIR . '/404.php';
 }

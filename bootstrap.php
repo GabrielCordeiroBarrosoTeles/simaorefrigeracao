@@ -1,4 +1,9 @@
 <?php
+/**
+ * Bootstrap do sistema
+ * Inicializa configurações, autoload e dependências
+ */
+
 // Iniciar sessão
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
@@ -8,11 +13,14 @@ if (session_status() == PHP_SESSION_NONE) {
 define('ROOT_DIR', __DIR__);
 define('CONFIG_DIR', ROOT_DIR . '/config');
 define('CONTROLLERS_DIR', ROOT_DIR . '/controllers');
-define('MODELS_DIR', ROOT_DIR . '/models');
+define('MODELS_DIR', ROOT_DIR . '/src/Domain/Entity');
+define('REPOSITORIES_DIR', ROOT_DIR . '/src/Domain/Repository');
+define('SERVICES_DIR', ROOT_DIR . '/src/Application/Service');
 define('VIEWS_DIR', ROOT_DIR . '/views');
 define('HELPERS_DIR', ROOT_DIR . '/helpers');
-define('ASSETS_DIR', ROOT_DIR . '/assets');
-define('UPLOADS_DIR', ROOT_DIR . '/uploads');
+define('ASSETS_DIR', ROOT_DIR . '/public/assets');
+define('UPLOADS_DIR', ROOT_DIR . '/public/uploads');
+define('PUBLIC_DIR', ROOT_DIR . '/public');
 
 // Carregar arquivos de configuração
 require_once CONFIG_DIR . '/config.php';
@@ -34,15 +42,34 @@ spl_autoload_register(function ($class_name) {
         return;
     }
     
-    // Verificar se é um modelo
+    // Verificar se é uma entidade
     if (file_exists(MODELS_DIR . '/' . $class_path . '.php')) {
         require_once MODELS_DIR . '/' . $class_path . '.php';
+        return;
+    }
+    
+    // Verificar se é um repositório
+    if (file_exists(REPOSITORIES_DIR . '/' . $class_path . '.php')) {
+        require_once REPOSITORIES_DIR . '/' . $class_path . '.php';
+        return;
+    }
+    
+    // Verificar se é um serviço
+    if (file_exists(SERVICES_DIR . '/' . $class_path . '.php')) {
+        require_once SERVICES_DIR . '/' . $class_path . '.php';
         return;
     }
     
     // Verificar se é uma classe auxiliar
     if (file_exists(HELPERS_DIR . '/' . $class_path . '.php')) {
         require_once HELPERS_DIR . '/' . $class_path . '.php';
+        return;
+    }
+    
+    // Verificar se é uma classe em src/
+    $src_path = ROOT_DIR . '/src/' . $class_path . '.php';
+    if (file_exists($src_path)) {
+        require_once $src_path;
         return;
     }
 });
@@ -87,3 +114,11 @@ function fatal_error_handler() {
 
 // Registrar manipulador de erros fatais
 register_shutdown_function('fatal_error_handler');
+
+// Carregar o Composer autoloader se existir
+if (file_exists(ROOT_DIR . '/vendor/autoload.php')) {
+    require_once ROOT_DIR . '/vendor/autoload.php';
+}
+
+// Inicializar container de dependências
+require_once ROOT_DIR . '/src/bootstrap.php';

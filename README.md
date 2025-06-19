@@ -1,154 +1,171 @@
-# Simão Refrigeração
+# Sistema Simão Refrigeração
 
-Sistema de gerenciamento para empresa de refrigeração, utilizando Doctrine ORM para persistência de dados e programação orientada a objetos.
+Sistema de gestão para empresa de refrigeração com arquitetura em camadas independentes.
 
-## Arquitetura do Sistema
+## Arquitetura
 
 ```mermaid
-flowchart TD
-    style E fill:#e06666, color:white
-    style S fill:#3d85c6, color:white
-    style D fill:#93c47d, color:white
-    style I fill:#f6b26b, color:white
-    style P fill:#8e7cc3, color:white
-
-    %% Camadas da Arquitetura
-    D[Domain] --- DE[Entity]
-    D --- DR[Repository Interface]
-    D --- DS[Domain Service]
-    D --- DV[Value Object]
-    D --- DX[Exception]
-
-    A[Application] --- AU[Use Case]
-    A --- AS[Application Service]
-    A --- AV[Validator]
-    A --- AD[DTO]
-
-    I[Infrastructure] --- IP[Persistence]
-    I --- IC[Config]
-    I --- IH[Http]
-    I --- IM[Migrations]
+graph TD
+    SQL[MySQL Database]
+    NoSQL[NoSQL Database]
+    Storage[File Storage]
     
-    P[Presentation] --- PC[Controller]
-    P --- PV[View]
-    P --- PA[API]
-
-    %% Fluxo de Dados
-    PC -->|usa| AU
-    AU -->|usa| DR
-    AU -->|usa| AS
-    AS -->|usa| DR
-    AS -->|valida| AV
-    AV -->|is invalid| DX
-    DR -->|implementado por| IP
-    IP -->|ORM| DB[Database]
-
-    %% Frontend
-    FE[Frontend] --> API[API Endpoints]
-    API -->|JSON Request| PA
-    PA -->|processa| PC
-    PC -->|retorna| PA
-    PA -->|JSON Response| API
+    AD[Camada de Acesso aos Dados]
+    CL[Camada de Lógica de Negócio]
+    CA[Camada de Apresentação]
+    
+    CLI[Interface CLI]
+    API[API REST]
+    WEB[Interface Web]
+    
+    SQL --> AD
+    NoSQL --> AD
+    Storage --> AD
+    
+    AD --> CL
+    CL --> CA
+    
+    CA --> CLI
+    CA --> API
+    CA --> WEB
+    
+    %% Estilos
+    style SQL fill:#f9f9f9,stroke:#d00,stroke-width:2px
+    style NoSQL fill:#f9f9f9,stroke:#d00,stroke-width:2px
+    style Storage fill:#f9f9f9,stroke:#00f,stroke-width:2px
+    style AD fill:#8e44ad,color:#fff,font-weight:bold
+    style CL fill:#c0392b,color:#fff,font-weight:bold
+    style CA fill:#2980b9,color:#fff,font-weight:bold
+    style CLI fill:#ecf0f1,stroke:#2980b9,stroke-width:2px
+    style API fill:#ecf0f1,stroke:#c0392b,stroke-width:2px
+    style WEB fill:#ecf0f1,stroke:#2980b9,stroke-width:2px
 ```
 
-## Requisitos
+## Nova Estrutura do Projeto
 
-- Docker e Docker Compose
+```
+simaorefrigeracao/
+├── app/                      # Aplicação Next.js/React
+│   ├── admin/                # Páginas de administração React
+│   ├── globals.css           # Estilos globais
+│   ├── layout.tsx            # Layout principal
+│   └── page.tsx              # Página inicial
+├── bin/                      # Binários e executáveis
+├── components/               # Componentes React reutilizáveis
+│   └── ui/                   # Componentes de UI
+├── config/                   # Configurações do sistema
+│   ├── config.php            # Configurações gerais
+│   └── database.php          # Configuração do banco de dados
+├── controllers/              # Controladores PHP
+│   ├── Admin/                # Controladores administrativos
+│   └── ...                   # Outros controladores
+├── docker/                   # Configurações Docker
+├── helpers/                  # Funções auxiliares
+├── hooks/                    # React hooks
+├── lib/                      # Bibliotecas e utilitários
+├── public/                   # Arquivos públicos acessíveis via web
+│   ├── admin/                # Páginas administrativas PHP
+│   ├── api/                  # Endpoints da API
+│   ├── assets/               # Recursos estáticos (CSS, JS, imagens)
+│   ├── tecnico/              # Páginas do técnico
+│   └── index.php             # Ponto de entrada principal
+├── scripts/                  # Scripts de utilidade e manutenção
+├── src/                      # Código fonte principal
+│   ├── Application/          # Camada de aplicação
+│   ├── Domain/               # Camada de domínio
+│   ├── Infrastructure/       # Camada de infraestrutura
+│   └── Presentation/         # Camada de apresentação
+├── styles/                   # Estilos globais
+├── vendor/                   # Dependências Composer (gerado automaticamente)
+├── views/                    # Templates e visualizações
+│   ├── admin/                # Views administrativas
+│   ├── public/               # Views públicas
+│   └── tecnico/              # Views do técnico
+├── .dockerignore             # Arquivos ignorados pelo Docker
+├── .env.example              # Exemplo de variáveis de ambiente
+├── .gitignore                # Arquivos ignorados pelo Git
+├── .htaccess                 # Configurações do Apache
+├── bootstrap.php             # Inicialização do sistema
+├── composer.json             # Dependências PHP
+├── docker-compose.yml        # Configuração do Docker Compose
+├── index.php                 # Ponto de entrada principal
+├── next.config.mjs           # Configuração do Next.js
+├── package.json              # Dependências JavaScript
+├── tailwind.config.ts        # Configuração do Tailwind CSS
+└── tsconfig.json             # Configuração do TypeScript
+```
 
-## Credenciais de Acesso
+## Princípios da Arquitetura
 
-### Área Administrativa
-- **URL**: http://localhost:8081/admin
-- **Email**: admin@simaorefrigeracao.com
-- **Senha**: password
+### 1. Independência de Tecnologia
+- Cada camada é independente de tecnologia específica
+- Interfaces definem contratos entre camadas
+- Fácil substituição de implementações
 
-### Área do Técnico
-- **URL**: http://localhost:8081/tecnico
-- **Email**: tecnico@simaorefrigeracao.com
-- **Senha**: password
+### 2. Separação de Responsabilidades
+- **Acesso aos Dados**: Persistência e recuperação
+- **Lógica de Negócio**: Regras e validações
+- **Apresentação**: Interface com usuário
 
-## Passo a Passo para Iniciar o Site
+### 3. Inversão de Dependência
+- Camadas superiores não dependem de implementações
+- Uso de interfaces e injeção de dependência
+- Container de dependências centralizado
 
-1. **Preparação do Ambiente**
-   - Certifique-se que o Docker Desktop está instalado e em execução
-   - Clone o repositório: `git clone [url-do-repositorio]`
-   - Navegue até a pasta do projeto: `cd simaorefrigeracao`
+## Tecnologias Atuais
 
-2. **Construir os Containers**
-   - Execute: `make build`
-   - Este comando constrói as imagens Docker necessárias para o projeto
-   - Aguarde até que todas as imagens sejam construídas
+- **Backend**: PHP 8+
+- **Frontend**: Next.js + React
+- **Banco**: MySQL
+- **Estilo**: Tailwind CSS
 
-3. **Iniciar os Containers**
-   - Execute: `make up`
-   - Este comando inicia todos os containers (PHP, Nginx, MySQL)
-   - Aguarde até que todos os serviços estejam disponíveis
+## Como Usar
 
-4. **Instalar Dependências**
-   - Execute: `make composer`
-   - Este comando instala todas as dependências PHP via Composer
-   - Aguarde a conclusão da instalação
+### Instalação
+```bash
+composer install
+npm install
+```
 
-5. **Configurar o Banco de Dados**
-   - Execute: `make setup-db`
-   - Este comando cria o banco de dados e as tabelas necessárias
+### Configuração
+```bash
+cp .env.example .env
+# Configure as variáveis de ambiente
+```
 
-6. **Alimentar o Banco de Dados**
-   - Execute: `make seed-db`
-   - Este comando insere dados iniciais no banco de dados, incluindo usuários de teste
+### Execução
+```bash
+# Desenvolvimento
+npm run dev
+php -S localhost:8000 -t public
+```
 
-7. **Acessar o Site**
-   - Abra o navegador e acesse: `http://localhost:8081`
-   - O sistema deve estar funcionando e pronto para uso
-   - Use as credenciais acima para acessar as áreas restritas
+### Reorganização de Arquivos
+Para organizar os arquivos da raiz para a nova estrutura:
+```bash
+php reorganize_structure.php
+```
 
-8. **Para Parar os Containers**
-   - Quando terminar de usar, execute: `make down`
-   - Isso irá parar todos os containers
+## Exemplos de Uso
 
-## Comandos úteis
+### API REST
+```bash
+GET /api/clientes          # Listar clientes
+POST /api/clientes         # Criar cliente
+PUT /api/clientes/{id}     # Atualizar cliente
+DELETE /api/clientes/{id}  # Excluir cliente
+```
 
-- `make up` - Inicia os containers
-- `make down` - Para os containers
-- `make composer` - Executa composer install
-- `make setup-db` - Configura o banco de dados
-- `make seed-db` - Alimenta o banco de dados com dados iniciais
-- `make shell` - Acessa o shell do container PHP
-- `make restart` - Reinicia todos os containers
+### Interface Web
+```
+/admin/dashboard           # Dashboard administrativo
+/tecnico/agendamentos      # Agendamentos do técnico
+```
 
-## Estrutura do Projeto
+## Vantagens da Arquitetura
 
-O projeto segue uma arquitetura limpa com as seguintes camadas:
-
-- **Domain**: Contém as regras de negócio e entidades principais
-  - Entity: Classes que representam as entidades do domínio
-  - Repository: Interfaces para acesso a dados
-  - Service: Serviços específicos do domínio
-  - ValueObject: Objetos de valor imutáveis
-  - Exception: Exceções específicas do domínio
-
-- **Application**: Orquestra o fluxo de dados entre as camadas
-  - UseCase: Implementa casos de uso da aplicação
-  - Service: Serviços de aplicação
-  - Validator: Validação de dados
-  - DTO: Objetos de transferência de dados
-
-- **Infrastructure**: Implementações técnicas e detalhes externos
-  - Persistence: Implementações de repositórios
-  - Http: Componentes HTTP
-  - Config: Configurações do sistema
-  - Migrations: Migrações do banco de dados
-
-- **Presentation**: Interface com o usuário
-  - Controller: Controladores que recebem requisições
-  - View: Templates e componentes visuais
-  - API: Endpoints da API REST
-
-## Entidades
-
-- **Cliente**: Representa os clientes da empresa
-- **Servico**: Representa os serviços oferecidos
-- **Tecnico**: Representa os técnicos da empresa
-- **Agendamento**: Representa os agendamentos de serviços
-- **Usuario**: Representa os usuários do sistema
-- **Contato**: Representa os contatos recebidos pelo site
+1. **Flexibilidade**: Troca fácil de tecnologias
+2. **Testabilidade**: Cada camada pode ser testada isoladamente
+3. **Manutenibilidade**: Código organizado e limpo
+4. **Escalabilidade**: Fácil adição de novas funcionalidades
+5. **Reutilização**: Lógica de negócio compartilhada entre interfaces

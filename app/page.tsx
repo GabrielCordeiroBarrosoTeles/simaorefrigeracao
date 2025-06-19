@@ -347,26 +347,26 @@ export default function Home() {
               </div>
               <div className="bg-white p-6 rounded-lg shadow-lg text-gray-900">
                 <h3 className="text-xl font-bold mb-4 text-blue-600">Solicite um orçamento</h3>
-                <form className="space-y-4">
+                <form action="/processar-contato" method="POST" className="space-y-4">
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-2">
                       <label htmlFor="name" className="text-sm font-medium">
                         Nome
                       </label>
-                      <Input id="name" placeholder="Seu nome" />
+                      <Input id="name" name="nome" placeholder="Seu nome" required />
                     </div>
                     <div className="space-y-2">
                       <label htmlFor="email" className="text-sm font-medium">
                         Email
                       </label>
-                      <Input id="email" type="email" placeholder="seu@email.com" />
+                      <Input id="email" name="email" type="email" placeholder="seu@email.com" required />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="phone" className="text-sm font-medium">
                       Telefone
                     </label>
-                    <Input id="phone" placeholder="(00) 00000-0000" />
+                    <Input id="phone" name="telefone" placeholder="(00) 00000-0000" required />
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="service" className="text-sm font-medium">
@@ -374,7 +374,9 @@ export default function Home() {
                     </label>
                     <select
                       id="service"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      name="servico"
+                      className="flex h-10 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      required
                     >
                       <option value="">Selecione um serviço</option>
                       <option value="instalacao">Instalação</option>
@@ -389,9 +391,9 @@ export default function Home() {
                     <label htmlFor="message" className="text-sm font-medium">
                       Mensagem
                     </label>
-                    <Textarea id="message" placeholder="Descreva sua necessidade" className="min-h-[100px]" />
+                    <Textarea id="message" name="mensagem" placeholder="Descreva sua necessidade" className="min-h-[100px]" required />
                   </div>
-                  <Button className="w-full bg-blue-600 hover:bg-blue-700">Enviar mensagem</Button>
+                  <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">Enviar mensagem</Button>
                 </form>
               </div>
             </div>

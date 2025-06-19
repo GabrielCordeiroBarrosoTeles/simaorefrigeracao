@@ -1,131 +1,151 @@
 <?php
 /**
- * Script para reorganizar a estrutura de arquivos do sistema
- * 
- * Este script deve ser executado na raiz do projeto para reorganizar
- * os arquivos soltos em uma estrutura de diretórios mais organizada.
+ * Script para reorganizar a estrutura de arquivos do projeto
+ * Move arquivos da raiz para diretórios apropriados
  */
 
-// Definir diretórios que serão criados (se não existirem)
+// Definir diretórios de destino
 $directories = [
-    'admin', // Para arquivos administrativos
-    'controllers/Admin', // Já existe, mas garantir
-    'models', // Para modelos de dados
-    'public', // Para arquivos públicos
-    'public/js',
-    'public/css',
-    'public/img',
-    'config', // Já existe, mas garantir
-    'includes', // Já existe, mas garantir
-    'views/admin/includes', // Já existe, mas garantir
+    'public/admin' => [],
+    'public/tecnico' => [],
+    'public/api' => [],
+    'public/assets/js' => [],
+    'public/assets/css' => [],
+    'public/assets/img' => [],
+    'scripts' => [],
+    'config' => [],
 ];
 
-// Criar diretórios
-foreach ($directories as $dir) {
-    if (!file_exists($dir)) {
+// Criar diretórios se não existirem
+foreach (array_keys($directories) as $dir) {
+    if (!is_dir($dir)) {
         mkdir($dir, 0755, true);
-        echo "Diretório criado: $dir<br>";
+        echo "Diretório criado: $dir\n";
     }
 }
 
-// Mapeamento de arquivos para mover
-$file_mapping = [
-    // Arquivos admin-* para pasta admin/
-    'admin-dashboard.php' => 'admin/dashboard.php',
-    'admin-login.php' => 'admin/login.php',
-    'admin-logout.php' => 'admin/logout.php',
-    'admin-form.php' => 'admin/form.php',
-    'admin-save.php' => 'admin/save.php',
-    'admin-delete.php' => 'admin/delete.php',
-    'admin-table.php' => 'admin/table.php',
-    'admin-calendario.php' => 'admin/calendario.php',
-    'admin-calendario-json.php' => 'admin/calendario-json.php',
-    'admin-settings.php' => 'admin/settings.php',
-    'admin-profile.php' => 'admin/profile.php',
-    'admin-depoimentos.php' => 'admin/depoimentos.php',
-    'admin-estatisticas.php' => 'admin/estatisticas.php',
-    'admin-contatos.php' => 'admin/contatos.php',
-    'admin-record.php' => 'admin/record.php',
-    'admin-security.php' => 'admin/security.php',
+// Mapeamento de arquivos para mover (origem => destino)
+$filesToMove = [
+    // Arquivos admin
+    'admin-adicionar-agendamentos.php' => 'public/admin/adicionar-agendamentos.php',
+    'admin-calendario-json.php' => 'public/admin/calendario-json.php',
+    'admin-calendario.php' => 'public/admin/calendario.php',
+    'admin-contatos.php' => 'public/admin/contatos.php',
+    'admin-dashboard.php' => 'public/admin/dashboard.php',
+    'admin-delete.php' => 'public/admin/delete.php',
+    'admin-depoimentos.php' => 'public/admin/depoimentos.php',
+    'admin-estatisticas.php' => 'public/admin/estatisticas.php',
+    'admin-form.php' => 'public/admin/form.php',
+    'admin-login.php' => 'public/admin/login.php',
+    'admin-profile.php' => 'public/admin/profile.php',
+    'admin-record.php' => 'public/admin/record.php',
+    'admin-save.php' => 'public/admin/save.php',
+    'admin-security.php' => 'public/admin/security.php',
+    'admin-settings.php' => 'public/admin/settings.php',
+    'admin-table.php' => 'public/admin/table.php',
     
-    // Arquivos JS e CSS para pasta public/
-    'assets/js/main.js' => 'public/js/main.js',
-    'assets/js/admin.js' => 'public/js/admin.js',
-    'assets/css/style.css' => 'public/css/style.css',
-    'assets/css/admin.css' => 'public/css/admin.css',
+    // Arquivos técnico
+    'tecnico-agendamento.php' => 'public/tecnico/agendamento.php',
+    'tecnico-agendamentos.php' => 'public/tecnico/agendamentos.php',
+    'tecnico-api.php' => 'public/tecnico/api.php',
+    'tecnico-atualizar-status.php' => 'public/tecnico/atualizar-status.php',
+    'tecnico-calendario.php' => 'public/tecnico/calendario.php',
+    'tecnico-dashboard.php' => 'public/tecnico/dashboard.php',
+    'tecnico-profile.php' => 'public/tecnico/profile.php',
     
-    // Arquivos de processamento para controllers/
-    'processar-contato.php' => 'controllers/processar-contato.php',
+    // Arquivos API
+    'api.php' => 'public/api/index.php',
+    'exportar-xml.php' => 'public/api/exportar-xml.php',
+    'get-garantia.php' => 'public/api/get-garantia.php',
     
-    // Arquivos de debug e setup para pasta tools/
-    'debug.php' => 'tools/debug.php',
-    'debug_db.php' => 'tools/debug_db.php',
-    'setup_database.php' => 'tools/setup_database.php',
-    'fix_database.php' => 'tools/fix_database.php',
-    'fix_tables.php' => 'tools/fix_tables.php',
-    'fix_logout.php' => 'tools/fix_logout.php',
-    'fix_all_issues.php' => 'tools/fix_all_issues.php',
-    'fix_database_name.php' => 'tools/fix_database_name.php',
-    'debug_estatisticas.php' => 'tools/debug_estatisticas.php',
+    // Scripts de utilidade
+    'debug.php' => 'scripts/debug.php',
+    'debug_db.php' => 'scripts/debug_db.php',
+    'debug_estatisticas.php' => 'scripts/debug_estatisticas.php',
+    'fix_all_issues.php' => 'scripts/fix_all_issues.php',
+    'fix_database.php' => 'scripts/fix_database.php',
+    'fix_database_name.php' => 'scripts/fix_database_name.php',
+    'fix_logout.php' => 'scripts/fix_logout.php',
+    'fix_tables.php' => 'scripts/fix_tables.php',
+    'organize_files.php' => 'scripts/organize_files.php',
+    'seed-db.php' => 'scripts/seed-db.php',
+    'setup-db.php' => 'scripts/setup-db.php',
+    'setup_database.php' => 'scripts/setup_database.php',
+    'test_login.php' => 'scripts/test_login.php',
+    'test_logout.php' => 'scripts/test_logout.php',
+    'test_logout_button.php' => 'scripts/test_logout_button.php',
     
-    // Arquivos de teste para pasta tests/
-    'test_login.php' => 'tests/test_login.php',
-    'test_logout.php' => 'tests/test_logout.php',
-    'test_logout_button.php' => 'tests/test_logout_button.php',
+    // Arquivos públicos
+    'adicionar-agendamentos.php' => 'public/adicionar-agendamentos.php',
+    'gerar-pdf.php' => 'public/gerar-pdf.php',
+    'processar-contato.php' => 'public/processar-contato.php',
+    'logout.php' => 'public/logout.php',
 ];
 
-// Função para atualizar referências em arquivos PHP
-function update_file_references($file_path, $file_mapping) {
-    if (!file_exists($file_path)) return;
-    
-    $content = file_get_contents($file_path);
-    
-    // Substituir referências de arquivos
-    foreach ($file_mapping as $old => $new) {
-        // Substituir includes e requires
-        $content = str_replace("include '$old'", "include '$new'", $content);
-        $content = str_replace("include_once '$old'", "include_once '$new'", $content);
-        $content = str_replace("require '$old'", "require '$new'", $content);
-        $content = str_replace("require_once '$old'", "require_once '$new'", $content);
+// Mover arquivos
+$count = 0;
+foreach ($filesToMove as $source => $destination) {
+    if (file_exists($source)) {
+        // Criar diretório de destino se não existir
+        $destDir = dirname($destination);
+        if (!is_dir($destDir)) {
+            mkdir($destDir, 0755, true);
+        }
         
-        // Substituir redirecionamentos
-        $content = str_replace("header('Location: $old", "header('Location: $new", $content);
-        $content = str_replace("redirect('$old", "redirect('$new", $content);
-        
-        // Substituir links
-        $content = str_replace("href='$old'", "href='$new'", $content);
-        $content = str_replace("action='$old'", "action='$new'", $content);
+        // Mover arquivo
+        if (rename($source, $destination)) {
+            echo "Movido: $source -> $destination\n";
+            $count++;
+        } else {
+            echo "ERRO ao mover: $source\n";
+        }
+    } else {
+        echo "Arquivo não encontrado: $source\n";
     }
+}
+
+// Atualizar index.php para apontar para a nova estrutura
+if (file_exists('index.php')) {
+    $indexContent = file_get_contents('index.php');
     
-    file_put_contents($file_path, $content);
+    // Atualizar caminhos no index.php
+    $indexContent = str_replace(
+        ['require_once \'config/config.php\';', 'require_once \'config/database.php\';', 'require_once \'helpers/functions.php\';'],
+        ['require_once \'config/config.php\';', 'require_once \'config/database.php\';', 'require_once \'helpers/functions.php\';'],
+        $indexContent
+    );
+    
+    // Atualizar rotas para os novos caminhos
+    $indexContent = str_replace(
+        ['/admin-', '/tecnico-'],
+        ['/admin/', '/tecnico/'],
+        $indexContent
+    );
+    
+    file_put_contents('index.php', $indexContent);
+    echo "Atualizado: index.php\n";
 }
 
-// Mover arquivos e atualizar referências
-echo "<h2>Plano de Reorganização de Arquivos</h2>";
-echo "<p>Este é um plano para reorganizar os arquivos do sistema. Você deve revisar este plano antes de executá-lo.</p>";
-echo "<table border='1' cellpadding='5'>";
-echo "<tr><th>Arquivo Original</th><th>Nova Localização</th></tr>";
+// Criar arquivo .htaccess para redirecionar URLs antigas
+$htaccessContent = <<<EOT
+# Redirecionar URLs antigas para a nova estrutura
+RewriteEngine On
 
-foreach ($file_mapping as $old => $new) {
-    echo "<tr><td>$old</td><td>$new</td></tr>";
-}
+# Redirecionar arquivos admin
+RewriteRule ^admin-([a-z-]+)\.php$ /admin/\$1.php [R=301,L]
 
-echo "</table>";
+# Redirecionar arquivos técnico
+RewriteRule ^tecnico-([a-z-]+)\.php$ /tecnico/\$1.php [R=301,L]
 
-echo "<h3>Instruções para Implementação</h3>";
-echo "<ol>";
-echo "<li>Faça um backup completo do sistema antes de iniciar a reorganização</li>";
-echo "<li>Mova cada arquivo para sua nova localização conforme a tabela acima</li>";
-echo "<li>Atualize todas as referências nos arquivos PHP (includes, requires, redirecionamentos)</li>";
-echo "<li>Atualize referências em arquivos HTML/CSS (links, scripts, imagens)</li>";
-echo "<li>Teste o sistema após cada conjunto de alterações</li>";
-echo "</ol>";
+# Manter compatibilidade com URLs existentes
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [QSA,L]
+EOT;
 
-echo "<h3>Benefícios da Nova Estrutura</h3>";
-echo "<ul>";
-echo "<li>Melhor organização e separação de responsabilidades</li>";
-echo "<li>Facilidade de manutenção e expansão</li>";
-echo "<li>Maior segurança com arquivos sensíveis fora da pasta pública</li>";
-echo "<li>Código mais limpo e profissional</li>";
-echo "</ul>";
+file_put_contents('public/.htaccess', $htaccessContent);
+echo "Criado: public/.htaccess\n";
+
+echo "\nReorganização concluída! $count arquivos foram movidos.\n";
+echo "Lembre-se de atualizar quaisquer referências a esses arquivos em seu código.\n";
 ?>

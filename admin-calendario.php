@@ -17,7 +17,7 @@ $db = db_connect();
 
 // Obter todos os técnicos para o filtro
 try {
-    $stmt = $db->prepare("SELECT id, nome, cor FROM tecnicos WHERE status = 'ativo' ORDER BY nome");
+    $stmt = $db->prepare("SELECT id, nome FROM tecnicos ORDER BY nome");
     $stmt->execute();
     $tecnicos = $stmt->fetchAll(PDO::FETCH_ASSOC);
 } catch (PDOException $e) {
@@ -33,99 +33,340 @@ try {
     $servicos = [];
 }
 
+// Obter agendamentos
+$agendamentos = [];
+try {
+    // Filtrar por status se especificado
+    $status_filter = '';
+    $params = [];
+    
+    if (isset($_GET['status']) && in_array($_GET['status'], ['pendente', 'concluido', 'cancelado'])) {
+        $status_filter = "WHERE a.status = :status";
+        $params[':status'] = $_GET['status'];
+    }
+    
+    $query = "SELECT a.*, 
+             IFNULL((SELECT nome FROM clientes WHERE id = a.cliente_id), 'Cliente não encontrado') as cliente_nome,
+             IFNULL((SELECT titulo FROM servicos WHERE id = a.servico_id), 'Serviço não encontrado') as servico_nome,
+             IFNULL((SELECT nome FROM tecnicos WHERE id = a.tecnico_id), 'Técnico não encontrado') as tecnico_nome
+             FROM agendamentos a 
+             $status_filter
+             ORDER BY a.data_agendamento DESC";
+    $stmt = $db->prepare($query);
+    foreach ($params as $key => $value) {
+        $stmt->bindValue($key, $value);
+    }
+    $stmt->execute();
+    $agendamentos = $stmt->fetchAll(PDO::FETCH_ASSOC);
+} catch (Exception $e) {
+    // Ignorar erro
+}
+
 // Título da página
 $page_title = "Calendário de Agendamentos";
-$page_icon = "calendar-alt";
-
-// Incluir o cabeçalho
-include 'views/admin/includes/header.php';
 ?>
 
-<!-- Sidebar -->
-<?php include 'views/admin/includes/sidebar.php'; ?>
-
-<!-- Content Wrapper -->
-<div id="content-wrapper" class="d-flex flex-column">
-
-    <!-- Main Content -->
-    <div id="content">
-
-        <!-- Begin Page Content -->
-        <div class="container-fluid">
-
-            <div class="d-sm-flex align-items-center justify-content-between mb-4">
-                <h1 class="h3 mb-0 text-gray-800">
-                    <i class="fas fa-<?= $page_icon ?> mr-2"></i> <?= $page_title ?>
-                </h1>
-                <a href="#" class="d-none d-sm-inline-block btn btn-sm btn-primary shadow-sm" data-toggle="modal" data-target="#novoAgendamentoModal">
-                    <i class="fas fa-plus fa-sm text-white-50"></i> Novo Agendamento
-                </a>
-            </div>
-
-            <?php display_flash_message(); ?>
-
-            <div class="card shadow mb-4">
-                <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary">Calendário de Agendamentos</h6>
-                    <div class="btn-group">
-                        <button type="button" class="btn btn-sm btn-outline-primary dropdown-toggle" data-toggle="dropdown" aria-expanded="false">
-                            <i class="fas fa-filter"></i> Filtros
-                        </button>
-                        <div class="dropdown-menu dropdown-menu-right p-3" style="width: 300px;">
-                            <form id="filterForm">
-                                <div class="form-group">
-                                    <label for="tecnico_id">Técnico</label>
-                                    <select class="form-control form-control-sm" id="tecnico_id" name="tecnico_id">
-                                        <option value="">Todos os técnicos</option>
-                                        <?php foreach ($tecnicos as $tecnico): ?>
-                                        <option value="<?= $tecnico['id'] ?>"><?= $tecnico['nome'] ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="servico_id">Serviço</label>
-                                    <select class="form-control form-control-sm" id="servico_id" name="servico_id">
-                                        <option value="">Todos os serviços</option>
-                                        <?php foreach ($servicos as $servico): ?>
-                                        <option value="<?= $servico['id'] ?>"><?= $servico['titulo'] ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </div>
-                                <div class="form-group">
-                                    <label for="status">Status</label>
-                                    <select class="form-control form-control-sm" id="status" name="status">
-                                        <option value="">Todos os status</option>
-                                        <option value="pendente">Pendente</option>
-                                        <option value="confirmado">Confirmado</option>
-                                        <option value="concluido">Concluído</option>
-                                        <option value="cancelado">Cancelado</option>
-                                    </select>
-                                </div>
-                                <div class="form-group mb-0">
-                                    <button type="submit" class="btn btn-primary btn-sm btn-block">Aplicar Filtros</button>
-                                    <button type="button" id="resetFilters" class="btn btn-secondary btn-sm btn-block mt-2">Limpar Filtros</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div id="calendar"></div>
-                </div>
-            </div>
-
-        </div>
-        <!-- /.container-fluid -->
-
-    </div>
-    <!-- End of Main Content -->
-
-    <!-- Footer -->
-    <?php include 'views/admin/includes/footer.php'; ?>
-    <!-- End of Footer -->
-
-</div>
-<!-- End of Content Wrapper -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><?= $page_title ?> | <?= defined('SITE_NAME') ? SITE_NAME : 'Simão Refrigeração' ?></title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --dark: #1f2937;
+            --white: #ffffff;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f4f6f9;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .admin-header {
+            background-color: var(--white);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 0.75rem 1.5rem;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1030;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+        
+        .header-brand {
+            display: flex;
+            align-items: center;
+            font-weight: 700;
+            font-size: 1.25rem;
+            color: var(--dark);
+            text-decoration: none;
+        }
+        
+        .header-brand i {
+            color: var(--primary);
+            margin-right: 0.5rem;
+            font-size: 1.5rem;
+        }
+        
+        .admin-sidebar {
+            position: fixed;
+            top: 60px;
+            left: 0;
+            bottom: 0;
+            width: 250px;
+            background-color: var(--dark);
+            color: var(--white);
+            overflow-y: auto;
+            z-index: 1020;
+        }
+        
+        .sidebar-menu {
+            padding: 1rem 0;
+        }
+        
+        .sidebar-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.5rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        
+        .sidebar-menu-item:hover {
+            color: var(--white);
+            background-color: rgba(255, 255, 255, 0.1);
+            text-decoration: none;
+        }
+        
+        .sidebar-menu-item.active {
+            color: var(--white);
+            background-color: var(--primary);
+        }
+        
+        .admin-content {
+            margin-left: 250px;
+            margin-top: 60px;
+            padding: 2rem;
+            flex: 1;
+        }
+        
+        .page-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 2rem;
+        }
+        
+        .page-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--dark);
+            margin: 0;
+        }
+        
+        .data-table-card {
+            background-color: var(--white);
+            border-radius: 0.5rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .data-table-header {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .data-table-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .data-table-body {
+            padding: 1.5rem;
+        }
+        
+        #calendar {
+            height: 600px;
+        }
+        
+        .badge {
+            padding: 0.35em 0.65em;
+            font-weight: 500;
+            border-radius: 0.25rem;
+        }
+        
+        .badge-success {
+            background-color: rgba(16, 185, 129, 0.1);
+            color: var(--success);
+        }
+        
+        .badge-warning {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+        
+        .badge-danger {
+            background-color: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+        }
+    </style>
+</head>
+<body>
+   <!-- Header -->
+   <header class="admin-header">
+       <a href="admin-dashboard.php" class="header-brand">
+           <i class="fas fa-snowflake"></i>
+           Simão Refrigeração
+       </a>
+       
+       <div class="header-actions">
+           <a href="index.php" target="_blank" class="btn btn-outline-secondary">
+               <i class="fas fa-external-link-alt"></i>
+               Ver Site
+           </a>
+           
+           <div class="dropdown">
+               <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-toggle="dropdown">
+                   <i class="fas fa-user"></i>
+                   <?= $_SESSION['user_nome'] ?>
+               </button>
+               <div class="dropdown-menu dropdown-menu-right">
+                   <a class="dropdown-item" href="admin-profile.php">
+                       <i class="fas fa-user"></i> Perfil
+                   </a>
+                   <div class="dropdown-divider"></div>
+                   <a class="dropdown-item" href="admin-login.php?logout=1">
+                       <i class="fas fa-sign-out-alt"></i> Sair
+                   </a>
+               </div>
+           </div>
+       </div>
+   </header>
+   
+   <!-- Sidebar -->
+   <aside class="admin-sidebar">
+       <div class="sidebar-menu">
+           <a href="admin-dashboard.php" class="sidebar-menu-item">
+               <i class="fas fa-tachometer-alt"></i>
+               Dashboard
+           </a>
+           <a href="admin-agendamentos.php" class="sidebar-menu-item">
+               <i class="fas fa-calendar-check"></i>
+               Agendamentos
+           </a>
+           <a href="admin-calendario.php" class="sidebar-menu-item active">
+               <i class="fas fa-calendar-alt"></i>
+               Calendário
+           </a>
+           <a href="admin-clientes.php" class="sidebar-menu-item">
+               <i class="fas fa-users"></i>
+               Clientes
+           </a>
+           <a href="admin-tecnicos.php" class="sidebar-menu-item">
+               <i class="fas fa-user-hard-hat"></i>
+               Técnicos
+           </a>
+           <a href="admin-servicos.php" class="sidebar-menu-item">
+               <i class="fas fa-tools"></i>
+               Serviços
+           </a>
+       </div>
+   </aside>
+   
+   <!-- Main Content -->
+   <main class="admin-content">
+       <div class="page-header">
+           <h1 class="page-title">
+               <i class="fas fa-calendar-alt mr-2"></i>
+               Calendário de Agendamentos
+           </h1>
+           
+           <div class="btn-group">
+               <a href="admin-agendamentos.php" class="btn btn-outline-primary">
+                   <i class="fas fa-list"></i> Lista
+               </a>
+               <button type="button" class="btn btn-outline-primary dropdown-toggle dropdown-toggle-split" data-toggle="dropdown">
+                   <i class="fas fa-filter"></i> Filtros
+               </button>
+               <div class="dropdown-menu dropdown-menu-right p-3" style="width: 300px;">
+                   <form id="filterForm">
+                       <div class="form-group">
+                           <label for="tecnico_id">Técnico</label>
+                           <select class="form-control form-control-sm" id="tecnico_id" name="tecnico_id">
+                               <option value="">Todos os técnicos</option>
+                               <?php foreach ($tecnicos as $tecnico): ?>
+                               <option value="<?= $tecnico['id'] ?>"><?= $tecnico['nome'] ?></option>
+                               <?php endforeach; ?>
+                           </select>
+                       </div>
+                       <div class="form-group">
+                           <label for="servico_id">Serviço</label>
+                           <select class="form-control form-control-sm" id="servico_id" name="servico_id">
+                               <option value="">Todos os serviços</option>
+                               <?php foreach ($servicos as $servico): ?>
+                               <option value="<?= $servico['id'] ?>"><?= $servico['titulo'] ?></option>
+                               <?php endforeach; ?>
+                           </select>
+                       </div>
+                       <div class="form-group">
+                           <label for="status">Status</label>
+                           <select class="form-control form-control-sm" id="status" name="status">
+                               <option value="">Todos os status</option>
+                               <option value="pendente">Pendente</option>
+                               <option value="concluido">Concluído</option>
+                               <option value="cancelado">Cancelado</option>
+                           </select>
+                       </div>
+                       <div class="form-group mb-0">
+                           <button type="submit" class="btn btn-primary btn-sm btn-block">Aplicar Filtros</button>
+                           <button type="button" id="resetFilters" class="btn btn-secondary btn-sm btn-block mt-2">Limpar Filtros</button>
+                       </div>
+                   </form>
+               </div>
+           </div>
+       </div>
+       
+       <!-- Calendário -->
+       <div class="data-table-card">
+           <div class="data-table-header">
+               <h2 class="data-table-title">
+                   <i class="fas fa-calendar-alt"></i>
+                   Calendário de Agendamentos
+               </h2>
+           </div>
+           <div class="data-table-body">
+               <div id="calendar"></div>
+           </div>
+       </div>
+   </main>
 
 <!-- Modal Novo Agendamento -->
 <div class="modal fade" id="novoAgendamentoModal" tabindex="-1" role="dialog" aria-labelledby="novoAgendamentoModalLabel" aria-hidden="true">
@@ -370,241 +611,104 @@ include 'views/admin/includes/header.php';
     </div>
 </div>
 
-<!-- JavaScript -->
-<script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Inicializar máscara para valores monetários
-        $('.money').mask('#.##0,00', {reverse: true});
-        
-        // Inicializar calendário
-        var calendarEl = document.getElementById('calendar');
-        var calendar = new FullCalendar.Calendar(calendarEl, {
-            initialView: 'dayGridMonth',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay,listWeek'
-            },
-            locale: 'pt-br',
-            buttonText: {
-                today: 'Hoje',
-                month: 'Mês',
-                week: 'Semana',
-                day: 'Dia',
-                list: 'Lista'
-            },
-            themeSystem: 'bootstrap',
-            events: '/admin-calendario-json.php',
-            eventClick: function(info) {
-                exibirDetalhesAgendamento(info.event.id);
-                return false;
-            },
-            dateClick: function(info) {
-                // Preencher a data no modal de novo agendamento
-                $('#data_agendamento').val(info.dateStr);
-                $('#novoAgendamentoModal').modal('show');
-            },
-            eventContent: function(arg) {
-                // Se for um evento de contagem, não renderizar conteúdo
-                if (arg.event.display === 'background') {
-                    return;
-                }
-                
-                let timeText = arg.timeText;
-                let title = arg.event.title;
-                let status = arg.event.extendedProps.status || 'pendente';
-                let cliente = arg.event.extendedProps.cliente || '';
-                
-                let statusClass = '';
-                switch (status) {
-                    case 'pendente': statusClass = 'warning'; break;
-                    case 'confirmado': statusClass = 'primary'; break;
-                    case 'concluido': statusClass = 'success'; break;
-                    case 'cancelado': statusClass = 'danger'; break;
-                }
-                
-                let content = document.createElement('div');
-                content.classList.add('fc-event-content-wrapper');
-                
-                let timeEl = document.createElement('div');
-                timeEl.classList.add('fc-event-time');
-                timeEl.innerHTML = timeText;
-                
-                let titleEl = document.createElement('div');
-                titleEl.classList.add('fc-event-title');
-                titleEl.innerHTML = title;
-                
-                let clienteEl = document.createElement('div');
-                clienteEl.classList.add('fc-event-cliente');
-                clienteEl.innerHTML = cliente;
-                
-                let statusEl = document.createElement('div');
-                statusEl.classList.add('fc-event-status', 'badge', 'badge-' + statusClass);
-                statusEl.innerHTML = status.charAt(0).toUpperCase() + status.slice(1);
-                
-                content.appendChild(timeEl);
-                content.appendChild(titleEl);
-                content.appendChild(clienteEl);
-                content.appendChild(statusEl);
-                
-                let arrayOfDomNodes = [content];
-                return { domNodes: arrayOfDomNodes };
-            },
-            eventDidMount: function(info) {
-                // Adicionar tooltip apenas para eventos regulares
-                if (info.event.display !== 'background') {
-                    $(info.el).tooltip({
-                        title: info.event.title + ' - ' + info.event.extendedProps.cliente,
-                        placement: 'top',
-                        trigger: 'hover',
-                        container: 'body'
-                    });
-                }
-                
-                // Adicionar contagem de agendamentos ao dia
-                if (info.event.display === 'background' && info.event.extendedProps.count) {
-                    const dayEl = info.el.closest('.fc-daygrid-day');
-                    if (dayEl) {
-                        const eventsEl = dayEl.querySelector('.fc-daygrid-day-events');
-                        if (eventsEl) {
-                            eventsEl.setAttribute('data-count', info.event.extendedProps.count);
-                        }
-                    }
-                }
-            }
-        });
-        calendar.render();
-        
-        // Aplicar filtros
-        $('#filterForm').on('submit', function(e) {
-            e.preventDefault();
-            
-            const tecnico_id = $('#tecnico_id').val();
-            const servico_id = $('#servico_id').val();
-            const status = $('#status').val();
-            
-            let url = '/admin-calendario-json.php?';
-            if (tecnico_id) url += `tecnico_id=${tecnico_id}&`;
-            if (servico_id) url += `servico_id=${servico_id}&`;
-            if (status) url += `status=${status}&`;
-            
-            // Atualizar fonte de dados do calendário
-            calendar.removeAllEventSources();
-            calendar.addEventSource(url);
-        });
-        
-        // Limpar filtros
-        $('#resetFilters').on('click', function() {
-            $('#tecnico_id').val('');
-            $('#servico_id').val('');
-            $('#status').val('');
-            
-            // Atualizar fonte de dados do calendário
-            calendar.removeAllEventSources();
-            calendar.addEventSource('/admin-calendario-json.php');
-        });
-        
-        // Função para exibir detalhes do agendamento
-        function exibirDetalhesAgendamento(id) {
-            // Mostrar spinner e esconder conteúdo
-            $('#detalhesAgendamentoContent').hide();
-            $('.spinner-border').show();
-            
-            // Abrir modal
-            $('#detalhesAgendamentoModal').modal('show');
-            
-            // Buscar dados do agendamento
-            $.ajax({
-                url: '/admin-calendario-json.php?action=get_details&id=' + id,
-                type: 'GET',
-                dataType: 'json',
-                success: function(data) {
-                    // Preencher dados no modal
-                    $('#agendamento_titulo').text(data.titulo);
-                    $('#agendamento_cliente').text(data.cliente_nome);
-                    $('#agendamento_servico').text(data.servico_titulo);
-                    $('#agendamento_tecnico').text(data.tecnico_nome);
-                    $('#agendamento_data').text(formatarData(data.data_agendamento));
-                    $('#agendamento_horario').text(data.hora_inicio + (data.hora_fim ? ' - ' + data.hora_fim : ''));
-                    
-                    // Status com badge
-                    let statusClass = '';
-                    switch (data.status) {
-                        case 'pendente': statusClass = 'warning'; break;
-                        case 'confirmado': statusClass = 'primary'; break;
-                        case 'concluido': statusClass = 'success'; break;
-                        case 'cancelado': statusClass = 'danger'; break;
-                    }
-                    $('#agendamento_status').html('<span class="badge badge-' + statusClass + '">' + data.status.charAt(0).toUpperCase() + data.status.slice(1) + '</span>');
-                    
-                    // Observações
-                    if (data.observacoes) {
-                        $('#agendamento_observacoes').text(data.observacoes);
-                    } else {
-                        $('#agendamento_observacoes').text('Nenhuma observação registrada.');
-                    }
-                    
-                    // Configurar botões de ação
-                    $('#btn_editar_agendamento').attr('href', '/admin/agendamentos/editar?id=' + data.id);
-                    
-                    // Mostrar/esconder botão de finalizar conforme status
-                    if (data.status === 'concluido' || data.status === 'cancelado') {
-                        $('#btn_finalizar_agendamento').hide();
-                    } else {
-                        $('#btn_finalizar_agendamento').show();
-                        $('#finalizar_agendamento_id').val(data.id);
-                        
-                        // Marcar o técnico principal
-                        if (data.tecnico_id) {
-                            $('#tecnico_' + data.tecnico_id).prop('checked', true);
-                        }
-                    }
-                    
-                    // Configurar botão de cancelar
-                    $('#btn_cancelar_agendamento').attr('href', '/admin/agendamentos/cancelar?id=' + data.id);
-                    if (data.status === 'cancelado' || data.status === 'concluido') {
-                        $('#btn_cancelar_agendamento').hide();
-                    } else {
-                        $('#btn_cancelar_agendamento').show();
-                    }
-                    
-                    // Esconder spinner e mostrar conteúdo
-                    $('.spinner-border').hide();
-                    $('#detalhesAgendamentoContent').show();
-                },
-                error: function() {
-                    // Exibir mensagem de erro
-                    $('#detalhesAgendamentoContent').html('<div class="alert alert-danger">Erro ao carregar detalhes do agendamento.</div>');
-                    $('.spinner-border').hide();
-                    $('#detalhesAgendamentoContent').show();
-                }
-            });
-        }
-        
-        // Função para formatar data
-        function formatarData(data) {
-            const partes = data.split('-');
-            return partes[2] + '/' + partes[1] + '/' + partes[0];
-        }
-        
-        // Gerar PDF
-        $('#btnGerarPDF').click(function(e) {
-            e.preventDefault();
-            
-            // Validar formulário antes de gerar PDF
-            if (!$('#formFinalizarAgendamento')[0].checkValidity()) {
-                $('#formFinalizarAgendamento')[0].reportValidity();
-                return;
-            }
-            
-            // Obter ID do agendamento
-            const agendamentoId = $('#finalizar_agendamento_id').val();
-            
-            // Redirecionar para a página de geração de PDF
-            window.open('/gerar-pdf.php?tipo=agendamento&id=' + agendamentoId + '&' + $('#formFinalizarAgendamento').serialize(), '_blank');
-        });
-    });
-</script>
+   <!-- JavaScript -->
+   <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.bundle.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/main.min.js"></script>
+   <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.10.1/locales/pt-br.js"></script>
+   <script>
+       $(document).ready(function() {
+           // Inicializar calendário
+           var calendarEl = document.getElementById('calendar');
+           var calendar = new FullCalendar.Calendar(calendarEl, {
+               initialView: 'dayGridMonth',
+               headerToolbar: {
+                   left: 'prev,next today',
+                   center: 'title',
+                   right: 'dayGridMonth,timeGridWeek,listWeek'
+               },
+               locale: 'pt-br',
+               buttonText: {
+                   today: 'Hoje',
+                   month: 'Mês',
+                   week: 'Semana',
+                   list: 'Lista'
+               },
+               height: 600,
+               events: function(fetchInfo, successCallback, failureCallback) {
+                   // Converter agendamentos PHP para eventos do calendário
+                   var events = [];
+                   <?php foreach ($agendamentos as $agendamento): ?>
+                   events.push({
+                       id: '<?= $agendamento['id'] ?>',
+                       title: '<?= addslashes($agendamento['cliente_nome']) ?> - <?= addslashes($agendamento['servico_nome']) ?>',
+                       start: '<?= $agendamento['data_agendamento'] ?>T<?= $agendamento['hora_inicio'] ?>',
+                       <?php if (isset($agendamento['hora_fim']) && $agendamento['hora_fim']): ?>
+                       end: '<?= $agendamento['data_agendamento'] ?>T<?= $agendamento['hora_fim'] ?>',
+                       <?php endif; ?>
+                       backgroundColor: '<?php
+                           switch ($agendamento['status']) {
+                               case 'pendente': echo '#f59e0b'; break;
+                               case 'concluido': echo '#10b981'; break;
+                               case 'cancelado': echo '#ef4444'; break;
+                               default: echo '#3b82f6';
+                           }
+                       ?>',
+                       borderColor: '<?php
+                           switch ($agendamento['status']) {
+                               case 'pendente': echo '#f59e0b'; break;
+                               case 'concluido': echo '#10b981'; break;
+                               case 'cancelado': echo '#ef4444'; break;
+                               default: echo '#3b82f6';
+                           }
+                       ?>',
+                       extendedProps: {
+                           status: '<?= $agendamento['status'] ?>',
+                           cliente: '<?= addslashes($agendamento['cliente_nome']) ?>',
+                           servico: '<?= addslashes($agendamento['servico_nome']) ?>',
+                           tecnico: '<?= addslashes($agendamento['tecnico_nome']) ?>'
+                       }
+                   });
+                   <?php endforeach; ?>
+                   successCallback(events);
+               },
+               eventClick: function(info) {
+                   alert('Agendamento: ' + info.event.title + '\nStatus: ' + info.event.extendedProps.status);
+               },
+               eventDidMount: function(info) {
+                   // Adicionar tooltip
+                   $(info.el).tooltip({
+                       title: info.event.title + '\nTécnico: ' + info.event.extendedProps.tecnico + '\nStatus: ' + info.event.extendedProps.status,
+                       placement: 'top',
+                       trigger: 'hover'
+                   });
+               }
+           });
+           
+           calendar.render();
+           
+           // Aplicar filtros
+           $('#filterForm').on('submit', function(e) {
+               e.preventDefault();
+               
+               const tecnico_id = $('#tecnico_id').val();
+               const servico_id = $('#servico_id').val();
+               const status = $('#status').val();
+               
+               let url = 'admin-calendario.php?';
+               if (tecnico_id) url += `tecnico_id=${tecnico_id}&`;
+               if (servico_id) url += `servico_id=${servico_id}&`;
+               if (status) url += `status=${status}&`;
+               
+               window.location.href = url;
+           });
+           
+           // Limpar filtros
+           $('#resetFilters').on('click', function() {
+               window.location.href = 'admin-calendario.php';
+           });
+       });
+   </script>
 
 <style>
     /* Estilos para os eventos no calendário */
