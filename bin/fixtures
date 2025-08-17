@@ -56,5 +56,83 @@ foreach ($tecnicosData as $data) {
 }
 echo "✓ Técnicos carregados\n";
 
+// Usuários
+$usuariosData = require __DIR__ . '/DataFixtures/usuarios.php';
+foreach ($usuariosData as $data) {
+    $usuario = new Usuario(
+        $data['nome'],
+        new Email($data['email']),
+        $data['senha'],
+        UsuarioNivel::fromString($data['nivel'])
+    );
+    $entityManager->persist($usuario);
+}
+echo "✓ Usuários carregados\n";
+
 $entityManager->flush();
-echo "Fixtures carregadas com sucesso!\n";
+
+// Agendamentos (após flush para ter IDs)
+$agendamentosData = require __DIR__ . '/DataFixtures/agendamentos.php';
+foreach ($agendamentosData as $data) {
+    $cliente = $entityManager->find(Cliente::class, $data['cliente_id']);
+    $servico = $entityManager->find(Servico::class, $data['servico_id']);
+    $tecnico = $entityManager->find(Tecnico::class, $data['tecnico_id']);
+    
+    if ($cliente && $servico && $tecnico) {
+        $agendamento = new Agendamento(
+            $data['titulo'],
+            $cliente,
+            $servico,
+            $tecnico,
+            new \DateTime($data['data_agendamento']),
+            new \DateTime($data['hora_inicio'])
+        );
+        
+        if (isset($data['hora_fim'])) {
+            $agendamento->setHoraFim(new \DateTime($data['hora_fim']));
+        }
+        
+        $agendamento->setValor($data['valor']);
+        $agendamento->setStatus(AgendamentoStatus::fromString($data['status']));
+        
+        $entityManager->persist($agendamento);
+    }
+}
+echo "✓ Agendamentos carregados\n";
+
+// Contatos
+$contatosData = require __DIR__ . '/DataFixtures/contatos.php';
+foreach ($contatosData as $data) {
+    $contato = new Contato(
+        $data['nome'],
+        new Email($data['email']),
+        new Telefone($data['telefone']),
+        $data['mensagem']
+    );
+    
+    if (isset($data['servico_id'])) {
+        $servico = $entityManager->find(Servico::class, $data['servico_id']);
+        if ($servico) {
+            $contato->setServico($servico);
+        }
+    }
+    
+    $contato->setStatus(ContatoStatus::fromString($data['status']));
+    $entityManager->persist($contato);
+}
+echo "✓ Contatos carregados\n";
+
+$entityManager->flush();
+
+echo "\n🎉 Fixtures carregadas com sucesso!\n";
+echo "\n📊 Dados carregados:\n";
+echo "👥 Clientes: 5\n";
+echo "🔧 Serviços: 4\n";
+echo "👨‍🔧 Técnicos: 4\n";
+echo "👤 Usuários: 4\n";
+echo "📅 Agendamentos: 3\n";
+echo "📞 Contatos: 3\n";
+echo "\n📋 Credenciais de Teste:\n";
+echo "👨💼 Admin: admin@simao.com / admin123\n";
+echo "🔧 Técnico: carlos.silva@simao.com / tecnico123\n";
+echo "\n🌐 Acesse: http://localhost:8000\n";

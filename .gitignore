@@ -28,6 +28,10 @@ Thumbs.db
 # Legacy files (can be removed after migration)
 /legacy/
 
+# Old system files
+*.php.bak
+/old_*
+
 # Uploads
 /public/uploads/
 !/public/uploads/.gitkeep
