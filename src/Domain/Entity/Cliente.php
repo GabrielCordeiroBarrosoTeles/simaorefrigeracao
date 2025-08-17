@@ -1,27 +1,34 @@
 <?php
-namespace App\Entity;
 
+namespace App\Domain\Entity;
+
+use App\Domain\ValueObject\Email;
+use App\Domain\ValueObject\Telefone;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity]
 #[ORM\Table(name: 'clientes')]
+#[ORM\HasLifecycleCallbacks]
 class Cliente
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    private int $id;
+    private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 100)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
     private string $nome;
 
-    #[ORM\Column(type: 'string', length: 100, unique: true)]
-    private string $email;
+    #[ORM\Embedded(class: Email::class)]
+    private Email $email;
 
-    #[ORM\Column(type: 'string', length: 20)]
-    private string $telefone;
+    #[ORM\Embedded(class: Telefone::class)]
+    private Telefone $telefone;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $endereco = null;
@@ -35,28 +42,38 @@ class Cliente
     #[ORM\Column(type: 'string', length: 10, nullable: true)]
     private ?string $cep = null;
 
-    #[ORM\Column(type: 'string', enumType: 'string')]
-    private string $tipo = 'residencial';
+    #[ORM\Column(type: 'string', enumType: ClienteTipo::class)]
+    private ClienteTipo $tipo;
 
     #[ORM\Column(type: 'text', nullable: true)]
     private ?string $observacoes = null;
 
-    #[ORM\Column(type: 'datetime')]
-    private \DateTime $data_criacao;
+    #[ORM\Column(type: 'datetime_immutable')]
+    private \DateTimeImmutable $dataCriacao;
 
-    #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTime $data_atualizacao = null;
+    #[ORM\Column(type: 'datetime_immutable', nullable: true)]
+    private ?\DateTimeImmutable $dataAtualizacao = null;
 
     #[ORM\OneToMany(targetEntity: Agendamento::class, mappedBy: 'cliente')]
     private Collection $agendamentos;
 
-    public function __construct()
+    public function __construct(string $nome, Email $email, Telefone $telefone, ClienteTipo $tipo = ClienteTipo::RESIDENCIAL)
     {
+        $this->nome = $nome;
+        $this->email = $email;
+        $this->telefone = $telefone;
+        $this->tipo = $tipo;
         $this->agendamentos = new ArrayCollection();
-        $this->data_criacao = new \DateTime();
+        $this->dataCriacao = new \DateTimeImmutable();
     }
 
-    public function getId(): int
+    #[ORM\PreUpdate]
+    public function onPreUpdate(): void
+    {
+        $this->dataAtualizacao = new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int
     {
         return $this->id;
     }
@@ -72,23 +89,23 @@ class Cliente
         return $this;
     }
 
-    public function getEmail(): string
+    public function getEmail(): Email
     {
         return $this->email;
     }
 
-    public function setEmail(string $email): self
+    public function setEmail(Email $email): self
     {
         $this->email = $email;
         return $this;
     }
 
-    public function getTelefone(): string
+    public function getTelefone(): Telefone
     {
         return $this->telefone;
     }
 
-    public function setTelefone(string $telefone): self
+    public function setTelefone(Telefone $telefone): self
     {
         $this->telefone = $telefone;
         return $this;
@@ -138,12 +155,12 @@ class Cliente
         return $this;
     }
 
-    public function getTipo(): string
+    public function getTipo(): ClienteTipo
     {
         return $this->tipo;
     }
 
-    public function setTipo(string $tipo): self
+    public function setTipo(ClienteTipo $tipo): self
     {
         $this->tipo = $tipo;
         return $this;
@@ -160,20 +177,14 @@ class Cliente
         return $this;
     }
 
-    public function getDataCriacao(): \DateTime
+    public function getDataCriacao(): \DateTimeImmutable
     {
-        return $this->data_criacao;
+        return $this->dataCriacao;
     }
 
-    public function getDataAtualizacao(): ?\DateTime
+    public function getDataAtualizacao(): ?\DateTimeImmutable
     {
-        return $this->data_atualizacao;
-    }
-
-    public function setDataAtualizacao(): self
-    {
-        $this->data_atualizacao = new \DateTime();
-        return $this;
+        return $this->dataAtualizacao;
     }
 
     public function getAgendamentos(): Collection
@@ -192,9 +203,7 @@ class Cliente
 
     public function removeAgendamento(Agendamento $agendamento): self
     {
-        if ($this->agendamentos->contains($agendamento)) {
-            $this->agendamentos->removeElement($agendamento);
-        }
+        $this->agendamentos->removeElement($agendamento);
         return $this;
     }
 }

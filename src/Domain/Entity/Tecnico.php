@@ -1,8 +1,9 @@
 <?php
-namespace App\Entity;
 
-use Doctrine\Common\Collections\ArrayCollection;
-use Doctrine\Common\Collections\Collection;
+namespace App\Domain\Entity;
+
+use App\Domain\ValueObject\Email;
+use App\Domain\ValueObject\Telefone;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity]
@@ -12,16 +13,16 @@ class Tecnico
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column(type: 'integer')]
-    private int $id;
+    private ?int $id = null;
 
     #[ORM\Column(type: 'string', length: 100)]
     private string $nome;
 
-    #[ORM\Column(type: 'string', length: 100, unique: true)]
-    private string $email;
+    #[ORM\Embedded(class: Email::class)]
+    private Email $email;
 
-    #[ORM\Column(type: 'string', length: 20)]
-    private string $telefone;
+    #[ORM\Embedded(class: Telefone::class)]
+    private Telefone $telefone;
 
     #[ORM\Column(type: 'string', length: 100, nullable: true)]
     private ?string $especialidade = null;
@@ -29,150 +30,39 @@ class Tecnico
     #[ORM\Column(type: 'string', length: 7)]
     private string $cor = '#3b82f6';
 
-    #[ORM\Column(type: 'string', enumType: 'string')]
-    private string $status = 'ativo';
+    #[ORM\Column(type: 'string', enumType: TecnicoStatus::class)]
+    private TecnicoStatus $status;
 
     #[ORM\Column(type: 'datetime')]
-    private \DateTime $data_criacao;
+    private \DateTimeImmutable $dataCriacao;
 
     #[ORM\Column(type: 'datetime', nullable: true)]
-    private ?\DateTime $data_atualizacao = null;
+    private ?\DateTimeImmutable $dataAtualizacao = null;
 
     #[ORM\ManyToOne(targetEntity: Usuario::class)]
     #[ORM\JoinColumn(name: 'usuario_id', referencedColumnName: 'id', nullable: true)]
     private ?Usuario $usuario = null;
 
-    #[ORM\OneToMany(targetEntity: Agendamento::class, mappedBy: 'tecnico')]
-    private Collection $agendamentos;
-
-    public function __construct()
-    {
-        $this->agendamentos = new ArrayCollection();
-        $this->data_criacao = new \DateTime();
-    }
-
-    public function getId(): int
-    {
-        return $this->id;
-    }
-
-    public function getNome(): string
-    {
-        return $this->nome;
-    }
-
-    public function setNome(string $nome): self
+    public function __construct(string $nome, Email $email, Telefone $telefone)
     {
         $this->nome = $nome;
-        return $this;
-    }
-
-    public function getEmail(): string
-    {
-        return $this->email;
-    }
-
-    public function setEmail(string $email): self
-    {
         $this->email = $email;
-        return $this;
-    }
-
-    public function getTelefone(): string
-    {
-        return $this->telefone;
-    }
-
-    public function setTelefone(string $telefone): self
-    {
         $this->telefone = $telefone;
-        return $this;
+        $this->status = TecnicoStatus::ATIVO;
+        $this->dataCriacao = new \DateTimeImmutable();
     }
 
-    public function getEspecialidade(): ?string
-    {
-        return $this->especialidade;
-    }
+    public function getId(): ?int { return $this->id; }
+    public function getNome(): string { return $this->nome; }
+    public function getEmail(): Email { return $this->email; }
+    public function getTelefone(): Telefone { return $this->telefone; }
+    public function getEspecialidade(): ?string { return $this->especialidade; }
+    public function getCor(): string { return $this->cor; }
+    public function getStatus(): TecnicoStatus { return $this->status; }
+    public function getUsuario(): ?Usuario { return $this->usuario; }
 
-    public function setEspecialidade(?string $especialidade): self
-    {
-        $this->especialidade = $especialidade;
-        return $this;
-    }
-
-    public function getCor(): string
-    {
-        return $this->cor;
-    }
-
-    public function setCor(string $cor): self
-    {
-        $this->cor = $cor;
-        return $this;
-    }
-
-    public function getStatus(): string
-    {
-        return $this->status;
-    }
-
-    public function setStatus(string $status): self
-    {
-        $this->status = $status;
-        return $this;
-    }
-
-    public function isAtivo(): bool
-    {
-        return $this->status === 'ativo';
-    }
-
-    public function getDataCriacao(): \DateTime
-    {
-        return $this->data_criacao;
-    }
-
-    public function getDataAtualizacao(): ?\DateTime
-    {
-        return $this->data_atualizacao;
-    }
-
-    public function setDataAtualizacao(): self
-    {
-        $this->data_atualizacao = new \DateTime();
-        return $this;
-    }
-
-    public function getUsuario(): ?Usuario
-    {
-        return $this->usuario;
-    }
-
-    public function setUsuario(?Usuario $usuario): self
-    {
-        $this->usuario = $usuario;
-        return $this;
-    }
-
-    public function getAgendamentos(): Collection
-    {
-        return $this->agendamentos;
-    }
-
-    public function addAgendamento(Agendamento $agendamento): self
-    {
-        if (!$this->agendamentos->contains($agendamento)) {
-            $this->agendamentos[] = $agendamento;
-            $agendamento->setTecnico($this);
-        }
-        return $this;
-    }
-
-    public function removeAgendamento(Agendamento $agendamento): self
-    {
-        if ($this->agendamentos->contains($agendamento)) {
-            $this->agendamentos->removeElement($agendamento);
-        }
-        return $this;
-    }
+    public function setEspecialidade(?string $especialidade): self { $this->especialidade = $especialidade; return $this; }
+    public function setCor(string $cor): self { $this->cor = $cor; return $this; }
+    public function setStatus(TecnicoStatus $status): self { $this->status = $status; return $this; }
+    public function setUsuario(?Usuario $usuario): self { $this->usuario = $usuario; return $this; }
 }

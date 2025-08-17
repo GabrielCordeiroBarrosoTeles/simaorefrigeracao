@@ -1,44 +1,42 @@
-# Dependências
+# Dependencies
 /vendor/
 /node_modules/
 
-# Arquivos de ambiente
-/.env
-/.env.local
-/.env.*.local
+# Environment
+.env
+.env.local
 
-# Arquivos de cache
+# Cache & Logs
 /var/cache/
 /var/log/
-/var/sessions/
-/.phpunit.result.cache
+/coverage/
 
-# Arquivos de IDE
-/.idea/
-/.vscode/
-*.sublime-project
-*.sublime-workspace
-*.code-workspace
-
-# Arquivos do sistema operacional
-.DS_Store
-Thumbs.db
+# IDE
+.vscode/
+.idea/
 *.swp
 *.swo
 
-# Arquivos de build
+# OS
+.DS_Store
+Thumbs.db
+
+# Build
 /build/
 /dist/
-/public/build/
 
-# Arquivos de upload
+# Legacy files (can be removed after migration)
+/legacy/
+
+# Uploads
 /public/uploads/
+!/public/uploads/.gitkeep
 
-# Arquivos de Docker
-/docker-compose.override.yml
-/docker/data/
+# Composer
+composer.phar
 
-# Outros
-/phpunit.xml
-/coverage/
-/composer.phar
+# PHPUnit
+.phpunit.result.cache
+
+# PHP CS Fixer
+.php-cs-fixer.cache

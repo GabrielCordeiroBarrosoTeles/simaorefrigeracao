@@ -1,0 +1,65 @@
+services:
+  _defaults:
+    autowire: true
+    autoconfigure: true
+    public: false
+
+  App\:
+    resource: '../src/'
+    exclude:
+      - '../src/Domain/Entity/'
+      - '../src/Domain/ValueObject/'
+      - '../src/Kernel.php'
+
+  # Doctrine Configuration
+  doctrine.entity_manager:
+    class: Doctrine\ORM\EntityManager
+    factory: ['@App\Infrastructure\Factory\EntityManagerFactory', 'create']
+
+  # Repositories
+  App\Domain\Repository\ClienteRepositoryInterface:
+    class: App\Infrastructure\Repository\DoctrineClienteRepository
+    arguments: ['@doctrine.entity_manager']
+
+  App\Domain\Repository\AgendamentoRepositoryInterface:
+    class: App\Infrastructure\Repository\DoctrineAgendamentoRepository
+    arguments: ['@doctrine.entity_manager']
+
+  App\Domain\Repository\ServicoRepositoryInterface:
+    class: App\Infrastructure\Repository\DoctrineServicoRepository
+    arguments: ['@doctrine.entity_manager']
+
+  App\Domain\Repository\TecnicoRepositoryInterface:
+    class: App\Infrastructure\Repository\DoctrineTecicoRepository
+    arguments: ['@doctrine.entity_manager']
+
+  # Domain Services
+  App\Domain\Service\ClienteService:
+    arguments:
+      - '@App\Domain\Repository\ClienteRepositoryInterface'
+      - '@App\Domain\Service\ValidationService'
+
+  App\Domain\Service\AgendamentoService:
+    arguments:
+      - '@App\Domain\Repository\AgendamentoRepositoryInterface'
+      - '@App\Domain\Repository\ClienteRepositoryInterface'
+      - '@App\Domain\Repository\ServicoRepositoryInterface'
+      - '@App\Domain\Repository\TecnicoRepositoryInterface'
+
+  # Application Services
+  App\Application\Service\ClienteApplicationService:
+    arguments:
+      - '@App\Domain\Service\ClienteService'
+      - '@App\Application\Factory\ClienteFactory'
+
+  # Event Dispatcher
+  App\Infrastructure\Event\EventDispatcher:
+    arguments: []
+
+  # Validation
+  App\Domain\Service\ValidationService:
+    arguments: ['@validator']
+
+  validator:
+    class: Symfony\Component\Validator\Validator\ValidatorInterface
+    factory: ['Symfony\Component\Validator\Validation', 'createValidator']

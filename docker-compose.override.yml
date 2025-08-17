@@ -1,0 +1,23 @@
+services:
+  composer:
+    image: composer:latest
+    container_name: simao_composer
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: bash -c "git config --global --add safe.directory /app && composer install"
+    networks:
+      - simao_network
+
+  migrations:
+    image: composer:latest
+    container_name: simao_migrations
+    volumes:
+      - ./:/app
+    working_dir: /app
+    command: bash -c "git config --global --add safe.directory /app && php -d display_errors=1 vendor/bin/doctrine-migrations migrations:migrate --no-interaction"
+    networks:
+      - simao_network
+    depends_on:
+      db:
+        condition: service_healthy

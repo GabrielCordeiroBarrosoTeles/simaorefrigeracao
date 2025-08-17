@@ -1,107 +1,146 @@
 <?php
-namespace App\Controller;
 
-use App\Service\ClienteService;
-use Doctrine\ORM\EntityManagerInterface;
-use App\Repository\ClienteRepository;
+namespace App\Presentation\Controller;
+
+use App\Application\DTO\ClienteDTO;
+use App\Application\Service\ClienteApplicationService;
+use App\Domain\Exception\DomainException;
+use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 class ClienteController
 {
-    private ClienteService $clienteService;
+    public function __construct(
+        private ClienteApplicationService $clienteService
+    ) {}
 
-    public function __construct(EntityManagerInterface $entityManager)
+    public function index(): JsonResponse
     {
-        $clienteRepository = new ClienteRepository($entityManager);
-        $this->clienteService = new ClienteService($clienteRepository);
-    }
-
-    public function index(): array
-    {
-        return $this->clienteService->listarTodos();
-    }
-
-    public function show(int $id): ?array
-    {
-        $cliente = $this->clienteService->buscarPorId($id);
-        
-        if (!$cliente) {
-            return null;
+        try {
+            $clientes = $this->clienteService->listarTodos();
+            return new JsonResponse([
+                'success' => true,
+                'data' => array_map(fn($cliente) => $cliente->toArray(), $clientes)
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao listar clientes'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        
-        return [
-            'id' => $cliente->getId(),
-            'nome' => $cliente->getNome(),
-            'email' => $cliente->getEmail(),
-            'telefone' => $cliente->getTelefone(),
-            'endereco' => $cliente->getEndereco(),
-            'cidade' => $cliente->getCidade(),
-            'estado' => $cliente->getEstado(),
-            'cep' => $cliente->getCep(),
-            'tipo' => $cliente->getTipo(),
-            'observacoes' => $cliente->getObservacoes(),
-            'data_criacao' => $cliente->getDataCriacao()->format('Y-m-d H:i:s'),
-            'data_atualizacao' => $cliente->getDataAtualizacao() ? $cliente->getDataAtualizacao()->format('Y-m-d H:i:s') : null
-        ];
     }
 
-    public function create(array $dados): ?array
+    public function show(int $id): JsonResponse
     {
-        $cliente = $this->clienteService->criar($dados);
-        
-        if (!$cliente) {
-            return null;
+        try {
+            $cliente = $this->clienteService->buscarPorId($id);
+            return new JsonResponse([
+                'success' => true,
+                'data' => $cliente->toArray()
+            ]);
+        } catch (DomainException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], Response::HTTP_NOT_FOUND);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro interno do servidor'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        
-        return [
-            'id' => $cliente->getId(),
-            'nome' => $cliente->getNome(),
-            'email' => $cliente->getEmail(),
-            'mensagem' => 'Cliente criado com sucesso!'
-        ];
     }
 
-    public function update(int $id, array $dados): ?array
+    public function store(Request $request): JsonResponse
     {
-        $cliente = $this->clienteService->buscarPorId($id);
-        
-        if (!$cliente) {
-            return null;
+        try {
+            $data = json_decode($request->getContent(), true);
+            $dto = ClienteDTO::fromArray($data);
+            
+            $cliente = $this->clienteService->criarCliente($dto);
+            
+            return new JsonResponse([
+                'success' => true,
+                'data' => $cliente->toArray(),
+                'message' => 'Cliente criado com sucesso'
+            ], Response::HTTP_CREATED);
+        } catch (DomainException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro interno do servidor'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        
-        $cliente = $this->clienteService->atualizar($cliente, $dados);
-        
-        return [
-            'id' => $cliente->getId(),
-            'nome' => $cliente->getNome(),
-            'email' => $cliente->getEmail(),
-            'mensagem' => 'Cliente atualizado com sucesso!'
-        ];
     }
 
-    public function delete(int $id): bool
+    public function update(Request $request, int $id): JsonResponse
     {
-        $cliente = $this->clienteService->buscarPorId($id);
-        
-        if (!$cliente) {
-            return false;
+        try {
+            $data = json_decode($request->getContent(), true);
+            $dto = ClienteDTO::fromArray($data);
+            
+            $cliente = $this->clienteService->atualizarCliente($id, $dto);
+            
+            return new JsonResponse([
+                'success' => true,
+                'data' => $cliente->toArray(),
+                'message' => 'Cliente atualizado com sucesso'
+            ]);
+        } catch (DomainException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro interno do servidor'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
         }
-        
-        $this->clienteService->excluir($cliente);
-        return true;
     }
 
-    public function findByTipo(string $tipo): array
+    public function destroy(int $id): JsonResponse
     {
-        return $this->clienteService->buscarPorTipo($tipo);
+        try {
+            $this->clienteService->excluirCliente($id);
+            
+            return new JsonResponse([
+                'success' => true,
+                'message' => 'Cliente excluído com sucesso'
+            ]);
+        } catch (DomainException $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], Response::HTTP_BAD_REQUEST);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro interno do servidor'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 
-    public function findByNome(string $nome): array
+    public function search(Request $request): JsonResponse
     {
-        return $this->clienteService->buscarPorNome($nome);
-    }
-
-    public function countByTipo(string $tipo): int
-    {
-        return $this->clienteService->contarPorTipo($tipo);
+        try {
+            $filtros = $request->query->all();
+            $clientes = $this->clienteService->buscarPorFiltros($filtros);
+            
+            return new JsonResponse([
+                'success' => true,
+                'data' => array_map(fn($cliente) => $cliente->toArray(), $clientes)
+            ]);
+        } catch (\Exception $e) {
+            return new JsonResponse([
+                'success' => false,
+                'message' => 'Erro ao buscar clientes'
+            ], Response::HTTP_INTERNAL_SERVER_ERROR);
+        }
     }
 }

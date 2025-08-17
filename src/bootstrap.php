@@ -1,67 +1,32 @@
 <?php
 
-// Autoloader
-spl_autoload_register(function ($class) {
-    $file = __DIR__ . '/' . str_replace('\\', '/', $class) . '.php';
-    if (file_exists($file)) {
-        require_once $file;
-    }
-});
+use App\Kernel;
+use Symfony\Component\DependencyInjection\ContainerBuilder;
+use Symfony\Component\Config\FileLocator;
+use Symfony\Component\DependencyInjection\Loader\YamlFileLoader;
+use Symfony\Component\HttpFoundation\Request;
 
-// Configurações
-$config = [
-    'database' => [
-        'host' => $_ENV['DB_HOST'] ?? 'localhost',
-        'name' => $_ENV['DB_NAME'] ?? 'simaorefrigeracao',
-        'user' => $_ENV['DB_USER'] ?? 'root',
-        'pass' => $_ENV['DB_PASS'] ?? ''
-    ]
-];
+require_once __DIR__ . '/../vendor/autoload.php';
 
-// Container de dependências
-class Container
-{
-    private array $services = [];
-    
-    public function set(string $name, callable $factory): void
-    {
-        $this->services[$name] = $factory;
-    }
-    
-    public function get(string $name): mixed
-    {
-        if (!isset($this->services[$name])) {
-            throw new Exception("Service {$name} not found");
+// Carregar variáveis de ambiente
+if (file_exists(__DIR__ . '/../.env')) {
+    $lines = file(__DIR__ . '/../.env', FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    foreach ($lines as $line) {
+        if (strpos($line, '=') !== false && strpos($line, '#') !== 0) {
+            putenv($line);
+            [$key, $value] = explode('=', $line, 2);
+            $_ENV[$key] = $value;
         }
-        
-        return $this->services[$name]();
     }
 }
 
-$container = new Container();
+// Configurar container
+$container = new ContainerBuilder();
+$loader = new YamlFileLoader($container, new FileLocator(__DIR__ . '/../config'));
+$loader->load('services.yaml');
+$container->compile();
 
-// Registrar serviços
-$container->set('database', fn() => new \DataAccess\Database\MySQLDatabase(
-    $config['database']['host'],
-    $config['database']['name'],
-    $config['database']['user'],
-    $config['database']['pass']
-));
-
-$container->set('clienteRepository', fn() => new \DataAccess\Repositories\ClienteRepository(
-    $container->get('database')
-));
-
-$container->set('clienteService', fn() => new \BusinessLogic\Services\ClienteService(
-    $container->get('clienteRepository')
-));
-
-$container->set('clienteApiController', fn() => new \Presentation\API\ClienteController(
-    $container->get('clienteService')
-));
-
-$container->set('clienteWebController', fn() => new \Presentation\Web\ClienteWebController(
-    $container->get('clienteService')
-));
+// Criar kernel
+$kernel = new Kernel('prod', false);
 
 return $container;

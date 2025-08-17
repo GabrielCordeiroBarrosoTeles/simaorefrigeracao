@@ -1,0 +1,60 @@
+#!/usr/bin/env php
+<?php
+
+require_once __DIR__ . '/../vendor/autoload.php';
+
+$container = require __DIR__ . '/../src/bootstrap.php';
+$entityManager = $container->get('doctrine.entity_manager');
+
+use App\Domain\Entity\Cliente;
+use App\Domain\Entity\ClienteTipo;
+use App\Domain\Entity\Servico;
+use App\Domain\Entity\Tecnico;
+use App\Domain\ValueObject\Email;
+use App\Domain\ValueObject\Telefone;
+
+echo "Carregando fixtures...\n";
+
+// Clientes
+$clientesData = require __DIR__ . '/DataFixtures/clientes.php';
+foreach ($clientesData as $data) {
+    $cliente = new Cliente(
+        $data['nome'],
+        new Email($data['email']),
+        new Telefone($data['telefone']),
+        ClienteTipo::fromString($data['tipo'])
+    );
+    
+    $cliente->setEndereco($data['endereco'])
+           ->setCidade($data['cidade'])
+           ->setEstado($data['estado'])
+           ->setCep($data['cep']);
+    
+    $entityManager->persist($cliente);
+}
+echo "✓ Clientes carregados\n";
+
+// Serviços
+$servicosData = require __DIR__ . '/DataFixtures/servicos.php';
+foreach ($servicosData as $data) {
+    $servico = new Servico($data['titulo'], $data['descricao'], $data['itens']);
+    $servico->setIcone($data['icone'])->setGarantiaMeses($data['garantia_meses']);
+    $entityManager->persist($servico);
+}
+echo "✓ Serviços carregados\n";
+
+// Técnicos
+$tecnicosData = require __DIR__ . '/DataFixtures/tecnicos.php';
+foreach ($tecnicosData as $data) {
+    $tecnico = new Tecnico(
+        $data['nome'],
+        new Email($data['email']),
+        new Telefone($data['telefone'])
+    );
+    $tecnico->setEspecialidade($data['especialidade'])->setCor($data['cor']);
+    $entityManager->persist($tecnico);
+}
+echo "✓ Técnicos carregados\n";
+
+$entityManager->flush();
+echo "Fixtures carregadas com sucesso!\n";
